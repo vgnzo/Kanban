@@ -40,11 +40,11 @@ public class CardService {
         this.historicoCardRepository = historicoCardRepository;
     }
 
-    public List<CardResponse> listarTodos() {
-        return cardRepository.findAll().stream()
-                .map(this::toResponse)
-                .toList();
-    }
+   public List<CardResponse> listarTodos() {
+    return cardRepository.findByArquivadoEmIsNull().stream()
+            .map(this::toResponse)
+            .toList();
+}
 
     public List<CardResponse> listarPorColuna(UUID colunaId) {
         return cardRepository.findByColunaId(colunaId).stream()
@@ -137,4 +137,24 @@ public class CardService {
                 card.getAtualizadoEm()
         );
     }
+
+    @Transactional
+public CardResponse arquivar(UUID cardId, String emailUsuario) {
+    Card card = cardRepository.findById(cardId)
+            .orElseThrow(() -> new RuntimeException("Card não encontrado"));
+
+    card.setArquivadoEm(LocalDateTime.now());
+
+    Card salvo = cardRepository.save(card);
+
+    registrarHistorico(salvo, card.getColuna(), card.getColuna(), emailUsuario, "Card arquivado");
+
+    return toResponse(salvo);
+}
+
+public List<CardResponse> listarArquivados() {
+    return cardRepository.findByArquivadoEmIsNotNull().stream()
+            .map(this::toResponse)
+            .toList();
+}
 }

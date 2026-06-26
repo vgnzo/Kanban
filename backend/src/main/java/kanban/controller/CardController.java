@@ -50,4 +50,16 @@ public ResponseEntity<CardResponse> criar(
         @AuthenticationPrincipal String email) {
             return ResponseEntity.ok(cardService.moverCard(cardId, colunaId, email));
         }
+    
+        @PatchMapping("/{cardId}/arquivar")
+    public ResponseEntity<CardResponse> arquivar(
+        @PathVariable UUID cardId,
+        @AuthenticationPrincipal String email) {
+            return ResponseEntity.ok(cardService.arquivar(cardId, email));
+        }
+
+    @GetMapping("/arquivados")
+    public ResponseEntity<List<CardResponse>> listarArquivados() {
+        return ResponseEntity.ok(cardService.listarArquivados());
+    }
 }

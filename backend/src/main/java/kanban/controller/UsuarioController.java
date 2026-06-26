@@ -2,6 +2,7 @@ package kanban.controller;
 
 import kanban.dto.UsuarioRequest;
 import kanban.dto.UsuarioResponse;
+import kanban.entity.Usuario;
 import kanban.service.UsuarioService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -23,12 +24,15 @@ public class UsuarioController {
         this.usuarioService = ususarioService;
     }
 
-    @PostMapping("/{id}/promover")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UsuarioResponse> promover(@PathVariable UUID id) {
-        return ResponseEntity.ok(usuarioService.promoverAdmin(id));
+    @PatchMapping("/{id}/perfil")
+@PreAuthorize("hasRole('ADMIN')")
+public ResponseEntity<UsuarioResponse> alterarPerfil(
+        @PathVariable UUID id,
+        @RequestBody AlterarPerfilRequest body) {
+    return ResponseEntity.ok(usuarioService.alterarPerfil(id, body.perfil()));
+}
 
-    }
+public record AlterarPerfilRequest(Usuario.Perfil perfil) {}
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")

@@ -53,4 +53,12 @@ public class UsuarioService {
     private UsuarioResponse toResponse(Usuario u) {
         return new UsuarioResponse(u.getId(), u.getNome(), u.getEmail(), u.getPerfil().name());
     }
+
+    public UsuarioResponse alterarPerfil(UUID id, Usuario.Perfil novoPerfil) {
+    Usuario usuario = usuarioRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+    usuario.setPerfil(novoPerfil);
+    return toResponse(usuarioRepository.save(usuario));
+}
 }

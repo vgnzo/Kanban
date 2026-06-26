@@ -25,6 +25,10 @@ public class Card {
     @JoinColumn(name = "coluna_id", nullable = false)
     private Coluna coluna;
 
+
+    @Column(name = "arquivado_em")
+    private LocalDateTime arquivadoEm;
+
     @ManyToOne
     @JoinColumn(name = "reserva_id")
     private Equipamento reserva;
