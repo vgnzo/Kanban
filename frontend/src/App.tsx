@@ -4,6 +4,7 @@ import Login from './pages/Login';
 import Kanban from './pages/Kanban';
 import CriarCard from './pages/CriarCard';
 import GerenciarUsuarios from './pages/GerenciarUsuarios';
+import GerenciarEquipamentos from './pages/GerenciarEquipamentos';
 import Historico from './pages/Historico';
 import { useAuth } from './contexts/AuthContext';
 
@@ -31,6 +32,11 @@ function App() {
           <Route path="/usuarios" element={
             <RotaProtegida>
               <GerenciarUsuarios />
+            </RotaProtegida>
+          } />
+          <Route path="/equipamentos" element={
+            <RotaProtegida>
+              <GerenciarEquipamentos />
             </RotaProtegida>
           } />
           <Route path="/historico" element={

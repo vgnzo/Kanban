@@ -31,6 +31,10 @@ export default function Historico() {
   const [historico, setHistorico] = useState<Historico[]>([]);
   const [loadingHistorico, setLoadingHistorico] = useState(false);
 
+  // filtros
+  const [filtroTexto, setFiltroTexto] = useState('');
+  const [filtroUnidade, setFiltroUnidade] = useState('');
+
   useEffect(() => {
     carregarArquivados();
   }, []);
@@ -72,6 +76,22 @@ export default function Historico() {
     return `${dia}/${mes} ${hora}:${min}`;
   };
 
+  // unidades presentes nos arquivados (pro filtro)
+  const unidadesDisponiveis = Array.from(new Set(cards.map(c => c.unidade))).sort();
+
+  // aplica os filtros
+  const texto = filtroTexto.trim().toLowerCase();
+  const cardsFiltrados = cards.filter(c => {
+    const casaTexto = !texto ||
+      c.frota.toLowerCase().includes(texto) ||
+      c.titulo.toLowerCase().includes(texto) ||
+      c.modelo.toLowerCase().includes(texto);
+    const casaUnidade = !filtroUnidade || c.unidade === filtroUnidade;
+    return casaTexto && casaUnidade;
+  });
+
+  const filtroAtivo = filtroTexto || filtroUnidade;
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -106,8 +126,38 @@ export default function Historico() {
           borderRadius: '16px',
           padding: '24px'
         }}>
+          {/* barra de filtros */}
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '18px', flexWrap: 'wrap' }}>
+            <input
+              value={filtroTexto}
+              onChange={(e) => setFiltroTexto(e.target.value)}
+              placeholder="🔍 Buscar frota, problema ou modelo..."
+              style={{
+                flex: 1, minWidth: '200px',
+                padding: '9px 14px',
+                background: 'rgba(255,255,255,0.08)',
+                border: '1px solid rgba(255,255,255,0.15)',
+                borderRadius: '8px', color: 'white', fontSize: '13px', outline: 'none'
+              }}
+            />
+            <select value={filtroUnidade} onChange={(e) => setFiltroUnidade(e.target.value)}
+              style={{
+                padding: '9px 12px', background: 'rgba(255,255,255,0.08)',
+                border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px',
+                color: 'white', fontSize: '13px', cursor: 'pointer', outline: 'none'
+              }}>
+              <option value="" style={{ background: '#1a1a2e' }}>Todas as unidades</option>
+              {unidadesDisponiveis.map(u => (
+                <option key={u} value={u} style={{ background: '#1a1a2e' }}>{u}</option>
+              ))}
+            </select>
+            {filtroAtivo && (
+              <Button variant="ghost" onClick={() => { setFiltroTexto(''); setFiltroUnidade(''); }}>Limpar</Button>
+            )}
+          </div>
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {cards.map(card => (
+            {cardsFiltrados.map(card => (
               <div key={card.id} onClick={() => abrirCard(card)} style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -131,9 +181,9 @@ export default function Historico() {
               </div>
             ))}
 
-            {cards.length === 0 && (
+            {cardsFiltrados.length === 0 && (
               <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', textAlign: 'center', padding: '24px' }}>
-                Nenhum problema arquivado ainda.
+                {cards.length === 0 ? 'Nenhum problema arquivado ainda.' : 'Nenhum resultado para o filtro.'}
               </div>
             )}
           </div>
