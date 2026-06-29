@@ -2,6 +2,7 @@ package kanban.service;
 
 import kanban.dto.LoginRequest;
 import kanban.dto.LoginResponse;
+import kanban.dto.UsuarioRequest;
 import kanban.entity.Usuario;
 import kanban.repository.UsuarioRepository;
 import kanban.security.JwtUtil;
@@ -38,6 +39,29 @@ public class AuthService {
                 usuario.getNome(),
                 usuario.getEmail(),
                 usuario.getPerfil().name()
+        );
+    }
+
+    public LoginResponse registrar(UsuarioRequest request) {
+        if (usuarioRepository.findByEmail(request.email()).isPresent()) {
+            throw new RuntimeException("Email já cadastrado");
+        }
+
+        Usuario usuario = new Usuario();
+        usuario.setNome(request.nome());
+        usuario.setEmail(request.email());
+        usuario.setSenhaHash(passwordEncoder.encode(request.senha()));
+        usuario.setPerfil(Usuario.Perfil.USER);
+
+        Usuario salvo = usuarioRepository.save(usuario);
+
+        String token = jwtUtil.gerarToken(salvo.getEmail(), salvo.getPerfil().name());
+
+        return new LoginResponse(
+                token,
+                salvo.getNome(),
+                salvo.getEmail(),
+                salvo.getPerfil().name()
         );
     }
 }

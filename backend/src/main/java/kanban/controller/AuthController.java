@@ -27,8 +27,10 @@ public class AuthController {
         return ResponseEntity.ok(authService.login(request));
     }
 
-    @PostMapping("/registrar")
-    public ResponseEntity<UsuarioResponse> registrar(@RequestBody @Valid UsuarioRequest request) {
-        return ResponseEntity.ok(usuarioService.criar(request));
+   @PostMapping("/registrar")
+    public ResponseEntity<LoginResponse> registrar(@RequestBody @Valid UsuarioRequest request) {
+        return ResponseEntity.ok(authService.registrar(request));
     }
+
+    
 }
