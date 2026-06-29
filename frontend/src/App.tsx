@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import Login from './pages/Login';
+import Cadastro from './pages/Cadastro';
 import Kanban from './pages/Kanban';
 import CriarCard from './pages/CriarCard';
 import GerenciarUsuarios from './pages/GerenciarUsuarios';
@@ -19,6 +20,7 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/cadastro" element={<Cadastro />} />
           <Route path="/kanban" element={
             <RotaProtegida>
               <Kanban />
