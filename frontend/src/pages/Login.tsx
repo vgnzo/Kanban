@@ -34,6 +34,7 @@ export default function Login() {
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
       display: 'flex',
+      flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
       fontFamily: "'Segoe UI', sans-serif"
@@ -149,6 +150,15 @@ export default function Login() {
           </Link>
         </p>
       </div>
+
+      <footer style={{
+        marginTop: '24px',
+        color: 'rgba(255,255,255,0.3)',
+        fontSize: '12px',
+        letterSpacing: '0.3px'
+      }}>
+        Desenvolvido por Vinicius Galdino
+      </footer>
     </div>
   );
 }

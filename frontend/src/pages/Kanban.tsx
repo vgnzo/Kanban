@@ -611,6 +611,17 @@ export default function Kanban() {
         </DragOverlay>
       </DndContext>
 
+      <footer style={{
+        textAlign: 'center',
+        padding: '6px 0',
+        color: 'rgba(255,255,255,0.25)',
+        fontSize: '11px',
+        letterSpacing: '0.3px',
+        flexShrink: 0
+      }}>
+        Desenvolvido por Vinicius Galdino
+      </footer>
+
       {cardSelecionado && (
         <div onClick={fecharCard} style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
