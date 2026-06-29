@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import Button from '../components/Button';
@@ -141,6 +141,13 @@ export default function Login() {
             {loading ? 'Entrando...' : 'Entrar'}
           </Button>
         </form>
+
+        <p style={{ textAlign: 'center', marginTop: '24px', color: 'rgba(255,255,255,0.5)', fontSize: '13px' }}>
+          Não tem conta?{' '}
+          <Link to="/cadastro" style={{ color: '#667eea', textDecoration: 'none', fontWeight: 500 }}>
+            Criar conta
+          </Link>
+        </p>
       </div>
     </div>
   );
