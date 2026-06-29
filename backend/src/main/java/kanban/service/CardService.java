@@ -14,6 +14,7 @@ import kanban.repository.HistoricoCardRepository;
 import kanban.repository.UsuarioRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import kanban.dto.CardUpdateRequest;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -156,5 +157,62 @@ public List<CardResponse> listarArquivados() {
     return cardRepository.findByArquivadoEmIsNotNull().stream()
             .map(this::toResponse)
             .toList();
+}
+
+@Transactional
+public CardResponse editar(UUID cardId, CardUpdateRequest request, String emailUsuario) {
+    Card card = cardRepository.findById(cardId)
+            .orElseThrow(() -> new RuntimeException("Card não encontrado"));
+
+    // ----- TÍTULO -----
+    if (!java.util.Objects.equals(card.getTitulo(), request.titulo())) {
+        registrarHistorico(card, null, null, emailUsuario,
+                "Título: \"" + card.getTitulo() + "\" → \"" + request.titulo() + "\"");
+        card.setTitulo(request.titulo());
+    }
+
+    // ----- DESCRIÇÃO -----
+    if (!java.util.Objects.equals(card.getDescricao(), request.descricao())) {
+        registrarHistorico(card, null, null, emailUsuario, "Descrição atualizada");
+        card.setDescricao(request.descricao());
+    }
+
+    // ----- PREVISÃO DE LIBERAÇÃO -----
+    if (!java.util.Objects.equals(card.getPrevisaoLiberacao(), request.previsaoLiberacao())) {
+        registrarHistorico(card, null, null, emailUsuario,
+                "Previsão de liberação: " + card.getPrevisaoLiberacao() + " → " + request.previsaoLiberacao());
+        card.setPrevisaoLiberacao(request.previsaoLiberacao());
+    }
+
+    // ----- RESPONSÁVEL -----
+    UUID respAtualId = card.getResponsavel() != null ? card.getResponsavel().getId() : null;
+    if (!java.util.Objects.equals(respAtualId, request.responsavelId())) {
+        String nomeAntigo = card.getResponsavel() != null ? card.getResponsavel().getNome() : "ninguém";
+        Usuario novoResp = request.responsavelId() != null
+                ? usuarioRepository.findById(request.responsavelId()).orElse(null)
+                : null;
+        String nomeNovo = novoResp != null ? novoResp.getNome() : "ninguém";
+        registrarHistorico(card, null, null, emailUsuario,
+                "Responsável: " + nomeAntigo + " → " + nomeNovo);
+        card.setResponsavel(novoResp);
+    }
+
+    // ----- FROTA RESERVA -----
+    UUID reservaAtualId = card.getReserva() != null ? card.getReserva().getId() : null;
+    if (!java.util.Objects.equals(reservaAtualId, request.reservaId())) {
+        String reservaAntiga = card.getReserva() != null ? card.getReserva().getFrota() : "nenhuma";
+        Equipamento novaReserva = request.reservaId() != null
+                ? equipamentoRepository.findById(request.reservaId()).orElse(null)
+                : null;
+        String reservaNova = novaReserva != null ? novaReserva.getFrota() : "nenhuma";
+        registrarHistorico(card, null, null, emailUsuario,
+                "Frota reserva: " + reservaAntiga + " → " + reservaNova);
+        card.setReserva(novaReserva);
+    }
+
+    card.setAtualizadoEm(LocalDateTime.now());
+    Card salvo = cardRepository.save(card);
+
+    return toResponse(salvo);
 }
 }

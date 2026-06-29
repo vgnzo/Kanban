@@ -4,12 +4,13 @@ package kanban.controller;
 
 import kanban.dto.CardRequest;
 import kanban.dto.CardResponse;
+import kanban.dto.CardUpdateRequest;
 import kanban.service.CardService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
+import kanban.dto.CardUpdateRequest;
 import java.util.List;
 import java.util.UUID;
 
@@ -62,4 +63,12 @@ public ResponseEntity<CardResponse> criar(
     public ResponseEntity<List<CardResponse>> listarArquivados() {
         return ResponseEntity.ok(cardService.listarArquivados());
     }
+
+    @PutMapping("/{cardId}")
+    public ResponseEntity<CardResponse> editar(
+        @PathVariable UUID cardId,
+        @RequestBody @Valid CardUpdateRequest request,
+        @AuthenticationPrincipal String email) {
+            return ResponseEntity.ok(cardService.editar(cardId, request, email));
+        }
 }
