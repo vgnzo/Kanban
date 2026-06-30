@@ -18,7 +18,7 @@ public class Card {
     private UUID id;
 
     @ManyToOne
-    @JoinColumn(name = "equipamento_id", nullable = false)
+    @JoinColumn(name = "equipamento_id")
     private Equipamento equipamento;
 
     @ManyToOne
@@ -51,4 +51,13 @@ public class Card {
 
     @Column(name = "atualizado_em", nullable = false)
     private LocalDateTime atualizadoEm = LocalDateTime.now();
+
+    @Column(name = "valor_extra_1", columnDefinition = "TEXT")
+    private String valorExtra1;
+
+    @Column(name = "valor_extra_2", columnDefinition = "TEXT")
+    private String valorExtra2;
+
+    @Column(name = "valor_extra_3", columnDefinition = "TEXT")
+    private String valorExtra3;
 }

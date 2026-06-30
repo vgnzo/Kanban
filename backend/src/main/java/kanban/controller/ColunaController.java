@@ -20,4 +20,9 @@ public class ColunaController {
     public ResponseEntity<List<Coluna>> listar(){
         return ResponseEntity.ok(colunaService.listarColunas());
     }
+
+    @GetMapping("/board/{boardId}")
+    public ResponseEntity<List<Coluna>> listarPorBoard(@PathVariable java.util.UUID boardId) {
+        return ResponseEntity.ok(colunaService.listarPorBoard(boardId));
+    }
 }

@@ -19,5 +19,8 @@ public record CardResponse(
     String responsavelNome,
     LocalDate previsaoLiberacao,
     LocalDateTime criadoEm,
-    LocalDateTime atualizadoEm
+    LocalDateTime atualizadoEm,
+    String valorExtra1,
+    String valorExtra2,
+    String valorExtra3
 ) {}

@@ -11,4 +11,6 @@ public interface CardRepository extends JpaRepository<Card, UUID> {
 
     List<Card> findByArquivadoEmIsNull();
     List<Card> findByArquivadoEmIsNotNull();
+
+    List<Card> findByColunaBoardIdAndArquivadoEmIsNull(UUID boardId);
 }

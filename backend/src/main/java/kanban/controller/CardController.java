@@ -2,6 +2,8 @@ package kanban.controller;
 
 
 
+import kanban.dto.CardGenericoRequest;
+import kanban.dto.CardGenericoUpdateRequest;
 import kanban.dto.CardRequest;
 import kanban.dto.CardResponse;
 import kanban.dto.CardUpdateRequest;
@@ -11,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import kanban.dto.CardUpdateRequest;
+import kanban.dto.CardGenericoUpdateRequest;
 import java.util.List;
 import java.util.UUID;
 
@@ -64,6 +67,14 @@ public ResponseEntity<CardResponse> criar(
         return ResponseEntity.ok(cardService.listarArquivados());
     }
 
+    @PutMapping("/generico/{cardId}")
+    public ResponseEntity<CardResponse> editarGenerico(
+        @PathVariable UUID cardId,
+        @RequestBody @Valid CardGenericoUpdateRequest request,
+        @AuthenticationPrincipal String email) {
+            return ResponseEntity.ok(cardService.editarGenerico(cardId, request, email));
+    }
+
     @PutMapping("/{cardId}")
     public ResponseEntity<CardResponse> editar(
         @PathVariable UUID cardId,
@@ -71,4 +82,17 @@ public ResponseEntity<CardResponse> criar(
         @AuthenticationPrincipal String email) {
             return ResponseEntity.ok(cardService.editar(cardId, request, email));
         }
+
+
+        @GetMapping("/board/{boardId}")
+    public ResponseEntity<List<CardResponse>> listarPorBoard(@PathVariable UUID boardId) {
+        return ResponseEntity.ok(cardService.listarPorBoard(boardId));
+    }
+
+    @PostMapping("/generico")
+    public ResponseEntity<CardResponse> criarGenerico(
+        @RequestBody @Valid CardGenericoRequest request,
+        @AuthenticationPrincipal String email) {
+            return ResponseEntity.ok(cardService.criarGenerico(request, email));
+    }
 }
