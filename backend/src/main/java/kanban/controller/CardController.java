@@ -95,4 +95,9 @@ public ResponseEntity<CardResponse> criar(
         @AuthenticationPrincipal String email) {
             return ResponseEntity.ok(cardService.criarGenerico(request, email));
     }
+
+    @GetMapping("/board/{boardId}/arquivados")
+    public ResponseEntity<List<CardResponse>> listarArquivadosPorBoard(@PathVariable UUID boardId) {
+        return ResponseEntity.ok(cardService.listarArquivadosPorBoard(boardId));
+    }
 }

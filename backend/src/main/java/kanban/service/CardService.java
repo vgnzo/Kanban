@@ -166,6 +166,12 @@ public List<CardResponse> listarArquivados() {
             .toList();
 }
 
+public List<CardResponse> listarArquivadosPorBoard(UUID boardId) {
+    return cardRepository.findByColunaBoardIdAndArquivadoEmIsNotNull(boardId).stream()
+            .map(this::toResponse)
+            .toList();
+}
+
 @Transactional
 public CardResponse editar(UUID cardId, CardUpdateRequest request, String emailUsuario) {
     Card card = cardRepository.findById(cardId)
