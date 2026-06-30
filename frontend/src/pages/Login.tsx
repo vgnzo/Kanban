@@ -21,7 +21,10 @@ export default function Login() {
       const response = await api.post('/api/auth/login', { email, senha });
       const { token, nome, perfil } = response.data;
       login(token, { nome, email, perfil });
-      navigate('/kanban');
+      
+      // 🚀 MODIFICADO: Agora manda para a tela de escolha de Kanban
+      navigate('/dashboard'); 
+      
     } catch {
       setErro('Email ou senha incorretos');
     } finally {
@@ -59,12 +62,13 @@ export default function Login() {
             justifyContent: 'center',
             margin: '0 auto 16px',
             fontSize: '28px'
-          }}>⚙️</div>
+          }}>💼</div>
+          {/* ✨ Textos atualizados para refletir o sistema multi-kanban */}
           <h1 style={{ color: 'white', margin: 0, fontSize: '24px', fontWeight: 600 }}>
-            Kanban Equipamentos
+            Portal Kanban
           </h1>
           <p style={{ color: 'rgba(255,255,255,0.5)', margin: '8px 0 0', fontSize: '14px' }}>
-            Gestão de equipamentos parados
+            Acesse seus painéis de gestão
           </p>
         </div>
 

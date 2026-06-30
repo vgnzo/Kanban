@@ -3,6 +3,8 @@ import { AuthProvider } from './contexts/AuthContext';
 import Login from './pages/Login';
 import Cadastro from './pages/Cadastro';
 import Kanban from './pages/Kanban';
+import KanbanGenerico from './pages/KanbanGenerico';
+import EscolhaKanban from './pages/EscolhaKanban'; // 🚀 NOVO: Importando a tela de escolha
 import CriarCard from './pages/CriarCard';
 import GerenciarUsuarios from './pages/GerenciarUsuarios';
 import GerenciarEquipamentos from './pages/GerenciarEquipamentos';
@@ -21,11 +23,28 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/cadastro" element={<Cadastro />} />
+          
+          {/* 🚀 NOVO: Rota da Tela de Seleção de Kanban */}
+          <Route path="/dashboard" element={
+            <RotaProtegida>
+              <EscolhaKanban />
+            </RotaProtegida>
+          } />
+
+          {/* Rota do Kanban Normal */}
           <Route path="/kanban" element={
             <RotaProtegida>
               <Kanban />
             </RotaProtegida>
           } />
+
+          {/* Rota do Kanban Genérico */}
+          <Route path="/kanban-generico" element={
+            <RotaProtegida>
+              <KanbanGenerico />
+            </RotaProtegida>
+          } />
+
           <Route path="/criar-card" element={
             <RotaProtegida>
               <CriarCard />

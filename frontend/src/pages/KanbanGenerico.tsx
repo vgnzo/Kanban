@@ -3,19 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import Button from '../components/Button';
+import Timeline from '../components/Timeline'; // 🛠️ Ajustado rota caso esteja na pasta de componentes. Altere se necessário!
 import {
   DndContext,
   DragOverlay,
+  useDraggable,
+  useDroppable,
   PointerSensor,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
-
-// 📦 IMPORTANDO OS SEUS NOVOS COMPONENTES GENÉRICOS
-// Ajuste o caminho './KanbanGenerico' se você tiver salvado com outro nome ou pasta
-import { CardArrastavel, ColunaDroppavel } from './KanbanGenerico';
-import Timeline from '../components/Timeline';
 
 interface Coluna {
   id: string;
@@ -60,7 +58,54 @@ interface Equipamento {
   modelo: string;
 }
 
-export default function Kanban() {
+// ===== CARD ARRASTÁVEL =====
+export function CardArrastavel({ card, podeArrastar, children }: {
+  card: Card;
+  podeArrastar: boolean;
+  children: React.ReactNode;
+}) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: card.id,
+    disabled: !podeArrastar,
+  });
+
+  const style: React.CSSProperties = {
+    opacity: isDragging ? 0.5 : 1,
+    cursor: podeArrastar ? 'grab' : 'pointer',
+    touchAction: 'none',
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
+      {children}
+    </div>
+  );
+}
+
+// ===== COLUNA QUE RECEBE O DROP =====
+export function ColunaDroppavel({ colunaId, children }: {
+  colunaId: string;
+  children: React.ReactNode;
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: colunaId });
+
+  return (
+    <div ref={setNodeRef} style={{
+      flex: 1,
+      overflowY: 'auto',
+      padding: '10px',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '8px',
+      background: isOver ? 'rgba(102,126,234,0.12)' : 'transparent',
+      transition: 'background 0.15s ease',
+    }}>
+      {children}
+    </div>
+  );
+}
+
+export default function KanbanGenerico() {
   const { usuario, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [colunas, setColunas] = useState<Coluna[]>([]);
@@ -90,7 +135,6 @@ export default function Kanban() {
     previsaoLiberacao: '',
   });
 
-  // sensor: exige mover 8px antes de começar a arrastar.
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
@@ -99,7 +143,7 @@ export default function Kanban() {
 
   const carregarDados = async () => {
     const [resColunas, resCards] = await Promise.all([
-      api.get('/api/colunas/board/53367b87-bdca-475f-8c2e-90e134535592'),
+      api.get('/api/colunas'),
       api.get('/api/cards'),
     ]);
     setColunas(resColunas.data);
@@ -171,6 +215,11 @@ export default function Kanban() {
       ]);
       setUsuarios(resUsuarios.data);
       setEquipamentos(resEquip.data);
+
+      const eqReserva = resEquip.data.find((eq: Equipamento) => eq.frota === cardSelecionado.frotaReserva);
+      if (eqReserva) {
+        setFormEdit(prev => ({ ...prev, reservaId: eqReserva.id }));
+      }
     } catch {
       // segue sem as listas se falhar
     }
@@ -194,6 +243,8 @@ export default function Kanban() {
       } else {
         fecharCard();
       }
+    } catch (error) {
+      console.error("Erro ao salvar edição:", error);
     } finally {
       setSalvandoEdicao(false);
     }
@@ -314,8 +365,8 @@ export default function Kanban() {
             fontSize: '18px'
           }}>⚙️</div>
           <div>
-            <div style={{ color: 'white', fontWeight: 600, fontSize: '16px' }}>Kanban Equipamentos</div>
-            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>Gestão de equipamentos parados</div>
+            <div style={{ color: 'white', fontWeight: 600, fontSize: '16px' }}>Kanban Genérico</div>
+            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>Gestão de processos gerais</div>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -332,10 +383,6 @@ export default function Kanban() {
           {isAdmin() && (
             <Button variant="secondary" onClick={() => navigate('/usuarios')}>Usuários</Button>
           )}
-
-          <Button variant="secondary" onClick={() => navigate('/dashboard')}>
-            📊 Trocar Painel
-          </Button>
 
           <Button variant="secondary" onClick={logout}>Sair</Button>
 
@@ -363,7 +410,7 @@ export default function Kanban() {
         <input
           value={filtroTexto}
           onChange={(e) => setFiltroTexto(e.target.value)}
-          placeholder="🔍 Buscar frota, problema ou modelo..."
+          placeholder="🔍 Buscar..."
           style={{
             flex: 1, minWidth: '200px',
             padding: '8px 14px',
@@ -468,14 +515,13 @@ export default function Kanban() {
 
                 <ColunaDroppavel colunaId={coluna.id}>
                   {cardsDaColuna(coluna.id).map((card) => (
-                  <CardArrastavel key={card.id} card={card} podeArrastar={isAdmin()}>
+                    <CardArrastavel key={card.id} card={card} podeArrastar={isAdmin()}>
                       <div onClick={() => abrirCard(card)} style={{
-                        background: 'rgba(40,44,72,0.45)',
+                        background: 'rgba(255,255,255,0.06)',
                         border: '1px solid rgba(255,255,255,0.09)',
                         borderLeft: `3px solid ${coluna.cor}`,
                         borderRadius: '8px',
                         padding: '10px 12px',
-                        cursor: 'pointer'
                       }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                           <span style={{ color: 'white', fontWeight: 700, fontSize: '13px' }}>{card.frota}</span>
@@ -588,7 +634,7 @@ export default function Kanban() {
             {editando ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '20px' }}>
                 <div>
-                  <label style={labelStyle}>Problema / Título *</label>
+                  <label style={labelStyle}>Título *</label>
                   <input style={inputStyle} value={formEdit.titulo}
                     onChange={(e) => setFormEdit({ ...formEdit, titulo: e.target.value })} />
                 </div>
@@ -633,7 +679,7 @@ export default function Kanban() {
               <>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
                   {[
-                    { label: 'Problema', value: cardSelecionado.titulo },
+                    { label: 'Título/Problema', value: cardSelecionado.titulo },
                     { label: 'Descrição', value: cardSelecionado.descricao },
                     { label: 'Frota reserva', value: cardSelecionado.frotaReserva },
                     { label: 'Responsável', value: cardSelecionado.responsavelNome },
@@ -685,11 +731,11 @@ export default function Kanban() {
                   <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
                     Histórico
                   </div>
-
-                  <Timeline 
-                    historico={historico} 
-                    loading={loadingHistorico} 
-                    corDoEvento={corDaColuna} 
+                  
+                  <Timeline
+                    historico={historico}
+                    loading={loadingHistorico}
+                    corDoEvento={(colunaDestino: string | null) => corDaColuna(colunaDestino)}
                   />
                 </div>
               </>
