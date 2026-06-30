@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import Button from '../components/Button';
-import Timeline from '../components/Timeline'; // 🛠️ Ajustado rota caso esteja na pasta de componentes. Altere se necessário!
+import Timeline from '../components/Timeline';
+import { CardArrastavel, ColunaDroppavel } from '../components/DragDrop';
 import {
   DndContext,
   DragOverlay,
-  useDraggable,
-  useDroppable,
   PointerSensor,
   useSensor,
   useSensors,
@@ -26,25 +25,24 @@ interface Card {
   id: string;
   titulo: string;
   descricao: string;
-  frota: string;
-  modelo: string;
-  unidade: string;
-  frotaReserva: string | null;
   colunaId: string;
   colunaNome: string;
   corColuna: string;
   responsavelId: string | null;
   responsavelNome: string | null;
   previsaoLiberacao: string | null;
+  valorExtra1: string | null;
+  valorExtra2: string | null;
+  valorExtra3: string | null;
 }
 
-interface Historico {
+interface Board {
   id: string;
-  usuarioNome: string;
-  colunaOrigem: string | null;
-  colunaDestino: string | null;
-  observacao: string;
-  criadoEm: string;
+  nome: string;
+  tipo: string;
+  campoExtra1: string | null;
+  campoExtra2: string | null;
+  campoExtra3: string | null;
 }
 
 interface Usuario {
@@ -52,73 +50,22 @@ interface Usuario {
   nome: string;
 }
 
-interface Equipamento {
-  id: string;
-  frota: string;
-  modelo: string;
-}
-
-// ===== CARD ARRASTÁVEL =====
-export function CardArrastavel({ card, podeArrastar, children }: {
-  card: Card;
-  podeArrastar: boolean;
-  children: React.ReactNode;
-}) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-    id: card.id,
-    disabled: !podeArrastar,
-  });
-
-  const style: React.CSSProperties = {
-    opacity: isDragging ? 0.5 : 1,
-    cursor: podeArrastar ? 'grab' : 'pointer',
-    touchAction: 'none',
-  };
-
-  return (
-    <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
-      {children}
-    </div>
-  );
-}
-
-// ===== COLUNA QUE RECEBE O DROP =====
-export function ColunaDroppavel({ colunaId, children }: {
-  colunaId: string;
-  children: React.ReactNode;
-}) {
-  const { setNodeRef, isOver } = useDroppable({ id: colunaId });
-
-  return (
-    <div ref={setNodeRef} style={{
-      flex: 1,
-      overflowY: 'auto',
-      padding: '10px',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '8px',
-      background: isOver ? 'rgba(102,126,234,0.12)' : 'transparent',
-      transition: 'background 0.15s ease',
-    }}>
-      {children}
-    </div>
-  );
-}
-
 export default function KanbanGenerico() {
+  const { boardId } = useParams<{ boardId: string }>();
   const { usuario, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
+
+  const [board, setBoard] = useState<Board | null>(null);
   const [colunas, setColunas] = useState<Coluna[]>([]);
   const [cards, setCards] = useState<Card[]>([]);
   const [cardSelecionado, setCardSelecionado] = useState<Card | null>(null);
-  const [historico, setHistorico] = useState<Historico[]>([]);
+  const [historico, setHistorico] = useState<any[]>([]);
   const [loadingHistorico, setLoadingHistorico] = useState(false);
   const [arquivando, setArquivando] = useState(false);
   const [cardArrastado, setCardArrastado] = useState<Card | null>(null);
 
-  // filtros
+  // filtros (genérico: texto, responsável, coluna — sem unidade)
   const [filtroTexto, setFiltroTexto] = useState('');
-  const [filtroUnidade, setFiltroUnidade] = useState('');
   const [filtroResponsavel, setFiltroResponsavel] = useState('');
   const [filtroColuna, setFiltroColuna] = useState('');
 
@@ -126,31 +73,44 @@ export default function KanbanGenerico() {
   const [editando, setEditando] = useState(false);
   const [salvandoEdicao, setSalvandoEdicao] = useState(false);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
-  const [equipamentos, setEquipamentos] = useState<Equipamento[]>([]);
   const [formEdit, setFormEdit] = useState({
     titulo: '',
     descricao: '',
     responsavelId: '',
-    reservaId: '',
     previsaoLiberacao: '',
+    valorExtra1: '',
+    valorExtra2: '',
+    valorExtra3: '',
   });
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
 
-  useEffect(() => { carregarDados(); }, []);
+  useEffect(() => {
+    if (boardId) carregarDados();
+  }, [boardId]);
 
   const carregarDados = async () => {
-    const [resColunas, resCards] = await Promise.all([
-      api.get('/api/colunas'),
-      api.get('/api/cards'),
+    // busca o board (pra nomes dos campos extras), colunas e cards — todos por boardId
+    const [resBoards, resColunas, resCards] = await Promise.all([
+      api.get('/api/boards'),
+      api.get(`/api/colunas/board/${boardId}`),
+      api.get(`/api/cards/board/${boardId}`),
     ]);
+    const boardAtual = resBoards.data.find((b: Board) => b.id === boardId) || null;
+    setBoard(boardAtual);
     setColunas(resColunas.data);
     setCards(resCards.data);
   };
 
-  const unidadesDisponiveis = Array.from(new Set(cards.map(c => c.unidade))).sort();
+  // nomes dos campos extras (vêm do board); se não tiver nome, o campo não é usado
+  const campos = [
+    { nome: board?.campoExtra1, chave: 'valorExtra1' as const },
+    { nome: board?.campoExtra2, chave: 'valorExtra2' as const },
+    { nome: board?.campoExtra3, chave: 'valorExtra3' as const },
+  ].filter(c => c.nome);
+
   const responsaveisDisponiveis = Array.from(
     new Set(cards.map(c => c.responsavelNome).filter((n): n is string => !!n))
   ).sort();
@@ -159,20 +119,17 @@ export default function KanbanGenerico() {
     const texto = filtroTexto.trim().toLowerCase();
     return lista.filter(c => {
       const casaTexto = !texto ||
-        c.frota.toLowerCase().includes(texto) ||
         c.titulo.toLowerCase().includes(texto) ||
-        c.modelo.toLowerCase().includes(texto);
-      const casaUnidade = !filtroUnidade || c.unidade === filtroUnidade;
+        (c.descricao || '').toLowerCase().includes(texto);
       const casaResponsavel = !filtroResponsavel || c.responsavelNome === filtroResponsavel;
-      return casaTexto && casaUnidade && casaResponsavel;
+      return casaTexto && casaResponsavel;
     });
   };
 
-  const filtroAtivo = filtroTexto || filtroUnidade || filtroResponsavel || filtroColuna;
+  const filtroAtivo = filtroTexto || filtroResponsavel || filtroColuna;
 
   const limparFiltros = () => {
     setFiltroTexto('');
-    setFiltroUnidade('');
     setFiltroResponsavel('');
     setFiltroColuna('');
   };
@@ -204,24 +161,17 @@ export default function KanbanGenerico() {
       titulo: cardSelecionado.titulo || '',
       descricao: cardSelecionado.descricao || '',
       responsavelId: cardSelecionado.responsavelId || '',
-      reservaId: '',
       previsaoLiberacao: cardSelecionado.previsaoLiberacao || '',
+      valorExtra1: cardSelecionado.valorExtra1 || '',
+      valorExtra2: cardSelecionado.valorExtra2 || '',
+      valorExtra3: cardSelecionado.valorExtra3 || '',
     });
     setEditando(true);
     try {
-      const [resUsuarios, resEquip] = await Promise.all([
-        api.get('/api/usuarios'),
-        api.get('/api/equipamentos'),
-      ]);
+      const resUsuarios = await api.get('/api/usuarios');
       setUsuarios(resUsuarios.data);
-      setEquipamentos(resEquip.data);
-
-      const eqReserva = resEquip.data.find((eq: Equipamento) => eq.frota === cardSelecionado.frotaReserva);
-      if (eqReserva) {
-        setFormEdit(prev => ({ ...prev, reservaId: eqReserva.id }));
-      }
     } catch {
-      // segue sem as listas se falhar
+      // segue sem a lista se falhar
     }
   };
 
@@ -229,22 +179,23 @@ export default function KanbanGenerico() {
     if (!cardSelecionado) return;
     setSalvandoEdicao(true);
     try {
-      await api.put(`/api/cards/${cardSelecionado.id}`, {
+      await api.put(`/api/cards/generico/${cardSelecionado.id}`, {
         titulo: formEdit.titulo,
         descricao: formEdit.descricao || null,
         responsavelId: formEdit.responsavelId || null,
-        reservaId: formEdit.reservaId || null,
         previsaoLiberacao: formEdit.previsaoLiberacao || null,
+        valorExtra1: formEdit.valorExtra1 || null,
+        valorExtra2: formEdit.valorExtra2 || null,
+        valorExtra3: formEdit.valorExtra3 || null,
       });
       await carregarDados();
-      const atualizado = (await api.get('/api/cards')).data.find((c: Card) => c.id === cardSelecionado.id);
+      const atualizado = (await api.get(`/api/cards/board/${boardId}`)).data
+        .find((c: Card) => c.id === cardSelecionado.id);
       if (atualizado) {
         await abrirCard(atualizado);
       } else {
         fecharCard();
       }
-    } catch (error) {
-      console.error("Erro ao salvar edição:", error);
     } finally {
       setSalvandoEdicao(false);
     }
@@ -305,7 +256,7 @@ export default function KanbanGenerico() {
     if (filtroColuna) {
       return colunas.filter(c => c.id === filtroColuna);
     }
-    if (filtroTexto || filtroUnidade || filtroResponsavel) {
+    if (filtroTexto || filtroResponsavel) {
       return colunas.filter(c => cardsDaColuna(c.id).length > 0);
     }
     return colunas;
@@ -315,6 +266,9 @@ export default function KanbanGenerico() {
     const col = colunas.find(c => c.nome === nome);
     return col ? col.cor : 'rgba(255,255,255,0.4)';
   };
+
+  // valor de um campo extra de um card pela chave
+  const valorCampo = (card: Card, chave: 'valorExtra1' | 'valorExtra2' | 'valorExtra3') => card[chave];
 
   const inputStyle = {
     width: '100%',
@@ -357,35 +311,25 @@ export default function KanbanGenerico() {
         flexShrink: 0
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <Button variant="ghost" onClick={() => navigate('/boards')}>←</Button>
           <div style={{
             width: '36px', height: '36px',
             background: 'linear-gradient(135deg, #667eea, #764ba2)',
             borderRadius: '10px',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: '18px'
-          }}>⚙️</div>
+          }}>📋</div>
           <div>
-            <div style={{ color: 'white', fontWeight: 600, fontSize: '16px' }}>Kanban Genérico</div>
-            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>Gestão de processos gerais</div>
+            <div style={{ color: 'white', fontWeight: 600, fontSize: '16px' }}>{board?.nome || 'Quadro'}</div>
+            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>Quadro de tarefas</div>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           {isAdmin() && (
-            <Button variant="primary" onClick={() => navigate('/criar-card')}>+ Novo card</Button>
+            <Button variant="primary" onClick={() => navigate(`/criar-card-generico/${boardId}`)}>+ Novo card</Button>
           )}
-
-          <Button variant="secondary" onClick={() => navigate('/historico')}>Histórico</Button>
-
-          {isAdmin() && (
-            <Button variant="secondary" onClick={() => navigate('/equipamentos')}>Equipamentos</Button>
-          )}
-
-          {isAdmin() && (
-            <Button variant="secondary" onClick={() => navigate('/usuarios')}>Usuários</Button>
-          )}
-
+          <Button variant="secondary" onClick={() => navigate(`/historico-generico/${boardId}`)}>Histórico</Button>
           <Button variant="secondary" onClick={logout}>Sair</Button>
-
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', marginLeft: '4px' }}>
             <div style={{ color: 'white', fontSize: '13px', fontWeight: 500, lineHeight: 1 }}>{usuario?.nome}</div>
             <div style={{
@@ -410,7 +354,7 @@ export default function KanbanGenerico() {
         <input
           value={filtroTexto}
           onChange={(e) => setFiltroTexto(e.target.value)}
-          placeholder="🔍 Buscar..."
+          placeholder="🔍 Buscar título ou descrição..."
           style={{
             flex: 1, minWidth: '200px',
             padding: '8px 14px',
@@ -419,17 +363,6 @@ export default function KanbanGenerico() {
             borderRadius: '8px', color: 'white', fontSize: '13px', outline: 'none'
           }}
         />
-        <select value={filtroUnidade} onChange={(e) => setFiltroUnidade(e.target.value)}
-          style={{
-            padding: '8px 12px', background: 'rgba(255,255,255,0.08)',
-            border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px',
-            color: 'white', fontSize: '13px', cursor: 'pointer', outline: 'none'
-          }}>
-          <option value="" style={{ background: '#1a1a2e' }}>Todas as unidades</option>
-          {unidadesDisponiveis.map(u => (
-            <option key={u} value={u} style={{ background: '#1a1a2e' }}>{u}</option>
-          ))}
-        </select>
         <select value={filtroResponsavel} onChange={(e) => setFiltroResponsavel(e.target.value)}
           style={{
             padding: '8px 12px', background: 'rgba(255,255,255,0.08)',
@@ -515,33 +448,38 @@ export default function KanbanGenerico() {
 
                 <ColunaDroppavel colunaId={coluna.id}>
                   {cardsDaColuna(coluna.id).map((card) => (
-                    <CardArrastavel key={card.id} card={card} podeArrastar={isAdmin()}>
+                    <CardArrastavel key={card.id} id={card.id} podeArrastar={isAdmin()}>
                       <div onClick={() => abrirCard(card)} style={{
                         background: 'rgba(255,255,255,0.06)',
                         border: '1px solid rgba(255,255,255,0.09)',
                         borderLeft: `3px solid ${coluna.cor}`,
                         borderRadius: '8px',
                         padding: '10px 12px',
+                        cursor: 'pointer'
                       }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                          <span style={{ color: 'white', fontWeight: 700, fontSize: '13px' }}>{card.frota}</span>
-                          {card.previsaoLiberacao && (
-                            <span style={{ fontSize: '10px', color: '#fa8c16', background: 'rgba(250,140,22,0.15)', padding: '1px 5px', borderRadius: '4px' }}>
-                              {card.previsaoLiberacao}
-                            </span>
-                          )}
+                        <div style={{ color: 'white', fontWeight: 700, fontSize: '13px', marginBottom: '6px' }}>
+                          {card.titulo}
                         </div>
-                        <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: '11px', marginBottom: '2px' }}>{card.modelo}</div>
-                        <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', marginBottom: '7px' }}>{card.unidade}</div>
-                        <div style={{
-                          color: 'rgba(255,255,255,0.7)',
-                          fontSize: '11px',
-                          background: 'rgba(255,255,255,0.04)',
-                          border: '1px solid rgba(255,255,255,0.06)',
-                          padding: '5px 8px',
-                          borderRadius: '6px',
-                          lineHeight: 1.4
-                        }}>{card.titulo}</div>
+                        {campos.map(campo => {
+                          const valor = valorCampo(card, campo.chave);
+                          if (!valor) return null;
+                          return (
+                            <div key={campo.chave} style={{ fontSize: '10px', marginBottom: '3px' }}>
+                              <span style={{ color: 'rgba(255,255,255,0.4)' }}>{campo.nome}: </span>
+                              <span style={{ color: 'rgba(255,255,255,0.75)' }}>{valor}</span>
+                            </div>
+                          );
+                        })}
+                        {card.responsavelNome && (
+                          <div style={{
+                            marginTop: '6px',
+                            fontSize: '10px',
+                            color: 'rgba(255,255,255,0.5)',
+                            display: 'flex', alignItems: 'center', gap: '4px'
+                          }}>
+                            👤 {card.responsavelNome}
+                          </div>
+                        )}
                       </div>
                     </CardArrastavel>
                   ))}
@@ -572,20 +510,7 @@ export default function KanbanGenerico() {
               boxShadow: '0 12px 30px rgba(0,0,0,0.5)',
               cursor: 'grabbing',
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                <span style={{ color: 'white', fontWeight: 700, fontSize: '13px' }}>{cardArrastado.frota}</span>
-              </div>
-              <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: '11px', marginBottom: '2px' }}>{cardArrastado.modelo}</div>
-              <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', marginBottom: '7px' }}>{cardArrastado.unidade}</div>
-              <div style={{
-                color: 'rgba(255,255,255,0.7)',
-                fontSize: '11px',
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.06)',
-                padding: '5px 8px',
-                borderRadius: '6px',
-                lineHeight: 1.4
-              }}>{cardArrastado.titulo}</div>
+              <div style={{ color: 'white', fontWeight: 700, fontSize: '13px' }}>{cardArrastado.titulo}</div>
             </div>
           ) : null}
         </DragOverlay>
@@ -622,12 +547,7 @@ export default function KanbanGenerico() {
             boxShadow: '0 25px 50px rgba(0,0,0,0.5)'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
-              <div>
-                <h3 style={{ color: 'white', margin: 0, fontSize: '18px' }}>{cardSelecionado.frota}</h3>
-                <p style={{ color: 'rgba(255,255,255,0.5)', margin: '4px 0 0', fontSize: '13px' }}>
-                  {cardSelecionado.modelo} — {cardSelecionado.unidade}
-                </p>
-              </div>
+              <h3 style={{ color: 'white', margin: 0, fontSize: '18px' }}>{cardSelecionado.titulo}</h3>
               <Button variant="icon" onClick={fecharCard}>×</Button>
             </div>
 
@@ -654,20 +574,32 @@ export default function KanbanGenerico() {
                   </select>
                 </div>
                 <div>
-                  <label style={labelStyle}>Frota reserva</label>
-                  <select style={{ ...inputStyle, cursor: 'pointer' }} value={formEdit.reservaId}
-                    onChange={(e) => setFormEdit({ ...formEdit, reservaId: e.target.value })}>
-                    <option value="" style={{ background: '#1a1a2e' }}>Nenhuma</option>
-                    {equipamentos.map(eq => (
-                      <option key={eq.id} value={eq.id} style={{ background: '#1a1a2e' }}>{eq.frota} — {eq.modelo}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label style={labelStyle}>Previsão de liberação</label>
+                  <label style={labelStyle}>Prazo</label>
                   <input type="date" style={inputStyle} value={formEdit.previsaoLiberacao}
                     onChange={(e) => setFormEdit({ ...formEdit, previsaoLiberacao: e.target.value })} />
                 </div>
+                {/* campos extras nomeados pelo board */}
+                {board?.campoExtra1 && (
+                  <div>
+                    <label style={labelStyle}>{board.campoExtra1}</label>
+                    <input style={inputStyle} value={formEdit.valorExtra1}
+                      onChange={(e) => setFormEdit({ ...formEdit, valorExtra1: e.target.value })} />
+                  </div>
+                )}
+                {board?.campoExtra2 && (
+                  <div>
+                    <label style={labelStyle}>{board.campoExtra2}</label>
+                    <input style={inputStyle} value={formEdit.valorExtra2}
+                      onChange={(e) => setFormEdit({ ...formEdit, valorExtra2: e.target.value })} />
+                  </div>
+                )}
+                {board?.campoExtra3 && (
+                  <div>
+                    <label style={labelStyle}>{board.campoExtra3}</label>
+                    <input style={inputStyle} value={formEdit.valorExtra3}
+                      onChange={(e) => setFormEdit({ ...formEdit, valorExtra3: e.target.value })} />
+                  </div>
+                )}
                 <div style={{ display: 'flex', gap: '10px', marginTop: '4px' }}>
                   <Button variant="secondary" onClick={() => setEditando(false)} style={{ flex: 1, padding: '11px' }}>Cancelar</Button>
                   <Button variant="primary" disabled={salvandoEdicao} onClick={salvarEdicao} style={{ flex: 2, padding: '11px' }}>
@@ -679,11 +611,10 @@ export default function KanbanGenerico() {
               <>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
                   {[
-                    { label: 'Título/Problema', value: cardSelecionado.titulo },
                     { label: 'Descrição', value: cardSelecionado.descricao },
-                    { label: 'Frota reserva', value: cardSelecionado.frotaReserva },
+                    ...campos.map(c => ({ label: c.nome as string, value: valorCampo(cardSelecionado, c.chave) })),
                     { label: 'Responsável', value: cardSelecionado.responsavelNome },
-                    { label: 'Previsão liberação', value: cardSelecionado.previsaoLiberacao },
+                    { label: 'Prazo', value: cardSelecionado.previsaoLiberacao },
                   ].filter(item => item.value).map(item => (
                     <div key={item.label} style={{
                       background: 'rgba(255,255,255,0.05)',
@@ -731,11 +662,10 @@ export default function KanbanGenerico() {
                   <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
                     Histórico
                   </div>
-                  
                   <Timeline
                     historico={historico}
                     loading={loadingHistorico}
-                    corDoEvento={(colunaDestino: string | null) => corDaColuna(colunaDestino)}
+                    corDoEvento={corDaColuna}
                   />
                 </div>
               </>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import api from '../services/api';
 import Button from '../components/Button';
 
@@ -17,6 +17,7 @@ interface Equipamento {
 }
 
 export default function CriarCard() {
+  const { boardId } = useParams<{ boardId: string }>();
   const navigate = useNavigate();
   const [colunas, setColunas] = useState<Coluna[]>([]);
   const [equipamentos, setEquipamentos] = useState<Equipamento[]>([]);
@@ -33,12 +34,12 @@ export default function CriarCard() {
   });
 
   useEffect(() => {
-    carregarDados();
-  }, []);
+    if (boardId) carregarDados();
+  }, [boardId]);
 
   const carregarDados = async () => {
     const [resColunas, resEquip] = await Promise.all([
-      api.get('/api/colunas'),
+      api.get(`/api/colunas/board/${boardId}`),
       api.get('/api/equipamentos'),
     ]);
     setColunas(resColunas.data);
@@ -58,7 +59,7 @@ export default function CriarCard() {
         reservaId: form.reservaId || null,
         previsaoLiberacao: form.previsaoLiberacao || null,
       });
-      navigate('/kanban');
+      navigate(`/kanban/${boardId}`);
     } catch {
       setErro('Erro ao criar card. Verifique os campos.');
     } finally {
@@ -104,7 +105,7 @@ export default function CriarCard() {
         alignItems: 'center',
         gap: '16px'
       }}>
-        <Button variant="ghost" onClick={() => navigate('/kanban')}>← Voltar</Button>
+        <Button variant="ghost" onClick={() => navigate(`/kanban/${boardId}`)}>← Voltar</Button>
         <div>
           <div style={{ color: 'white', fontWeight: 600, fontSize: '16px' }}>Novo Card</div>
           <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>Registrar problema em equipamento</div>
@@ -219,7 +220,7 @@ export default function CriarCard() {
               <Button
                 type="button"
                 variant="secondary"
-                onClick={() => navigate('/kanban')}
+                onClick={() => navigate(`/kanban/${boardId}`)}
                 style={{ flex: 1, padding: '12px', fontSize: '14px' }}
               >Cancelar</Button>
               <Button

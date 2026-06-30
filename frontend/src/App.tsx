@@ -2,9 +2,12 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import Login from './pages/Login';
 import Cadastro from './pages/Cadastro';
+import Boards from './pages/Board';
+import CriarBoard from './pages/CriarBoard';
+import CriarCardGenerico from './pages/CriarCardGenerico';
+import HistoricoGenerico from './pages/HistoricoGenerico';
 import Kanban from './pages/Kanban';
 import KanbanGenerico from './pages/KanbanGenerico';
-import EscolhaKanban from './pages/EscolhaKanban'; // 🚀 NOVO: Importando a tela de escolha
 import CriarCard from './pages/CriarCard';
 import GerenciarUsuarios from './pages/GerenciarUsuarios';
 import GerenciarEquipamentos from './pages/GerenciarEquipamentos';
@@ -23,29 +26,50 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/cadastro" element={<Cadastro />} />
-          
-          {/* 🚀 NOVO: Rota da Tela de Seleção de Kanban */}
-          <Route path="/dashboard" element={
+
+          {/* tela inicial após login: seleção de quadros */}
+          <Route path="/boards" element={
             <RotaProtegida>
-              <EscolhaKanban />
+              <Boards />
             </RotaProtegida>
           } />
 
-          {/* Rota do Kanban Normal */}
-          <Route path="/kanban" element={
+          {/* criar quadro novo (só admin chega aqui pelo botão) */}
+          <Route path="/criar-board" element={
+            <RotaProtegida>
+              <CriarBoard />
+            </RotaProtegida>
+          } />
+
+          {/* kanban de equipamentos, por board */}
+          <Route path="/kanban/:boardId" element={
             <RotaProtegida>
               <Kanban />
             </RotaProtegida>
           } />
 
-          {/* Rota do Kanban Genérico */}
-          <Route path="/kanban-generico" element={
+          {/* kanban genérico (tarefas), por board */}
+          <Route path="/kanban-generico/:boardId" element={
             <RotaProtegida>
               <KanbanGenerico />
             </RotaProtegida>
           } />
 
-          <Route path="/criar-card" element={
+          {/* criar tarefa num quadro genérico */}
+          <Route path="/criar-card-generico/:boardId" element={
+            <RotaProtegida>
+              <CriarCardGenerico />
+            </RotaProtegida>
+          } />
+
+          {/* histórico/arquivados de um quadro genérico */}
+          <Route path="/historico-generico/:boardId" element={
+            <RotaProtegida>
+              <HistoricoGenerico />
+            </RotaProtegida>
+          } />
+
+          <Route path="/criar-card/:boardId" element={
             <RotaProtegida>
               <CriarCard />
             </RotaProtegida>
@@ -65,6 +89,8 @@ function App() {
               <Historico />
             </RotaProtegida>
           } />
+
+          {/* qualquer rota desconhecida vai pro login */}
           <Route path="*" element={<Navigate to="/login" />} />
         </Routes>
       </BrowserRouter>

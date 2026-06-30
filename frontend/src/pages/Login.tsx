@@ -21,10 +21,10 @@ export default function Login() {
       const response = await api.post('/api/auth/login', { email, senha });
       const { token, nome, perfil } = response.data;
       login(token, { nome, email, perfil });
-      
-      // 🚀 MODIFICADO: Agora manda para a tela de escolha de Kanban
-      navigate('/dashboard'); 
-      
+
+      // após login, vai para a tela de seleção de quadros
+      navigate('/boards');
+
     } catch {
       setErro('Email ou senha incorretos');
     } finally {
@@ -63,7 +63,6 @@ export default function Login() {
             margin: '0 auto 16px',
             fontSize: '28px'
           }}>💼</div>
-          {/* ✨ Textos atualizados para refletir o sistema multi-kanban */}
           <h1 style={{ color: 'white', margin: 0, fontSize: '24px', fontWeight: 600 }}>
             Portal Kanban
           </h1>

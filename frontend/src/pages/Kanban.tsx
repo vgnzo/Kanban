@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import Button from '../components/Button';
+import Timeline from '../components/Timeline';
+import { CardArrastavel, ColunaDroppavel } from '../components/DragDrop';
 import {
   DndContext,
   DragOverlay,
@@ -11,11 +13,6 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
-
-// 📦 IMPORTANDO OS SEUS NOVOS COMPONENTES GENÉRICOS
-// Ajuste o caminho './KanbanGenerico' se você tiver salvado com outro nome ou pasta
-import { CardArrastavel, ColunaDroppavel } from './KanbanGenerico';
-import Timeline from '../components/Timeline';
 
 interface Coluna {
   id: string;
@@ -61,6 +58,7 @@ interface Equipamento {
 }
 
 export default function Kanban() {
+  const { boardId } = useParams<{ boardId: string }>();
   const { usuario, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [colunas, setColunas] = useState<Coluna[]>([]);
@@ -95,12 +93,14 @@ export default function Kanban() {
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
 
-  useEffect(() => { carregarDados(); }, []);
+  useEffect(() => {
+    if (boardId) carregarDados();
+  }, [boardId]);
 
   const carregarDados = async () => {
     const [resColunas, resCards] = await Promise.all([
-      api.get('/api/colunas/board/53367b87-bdca-475f-8c2e-90e134535592'),
-      api.get('/api/cards'),
+      api.get(`/api/colunas/board/${boardId}`),
+      api.get(`/api/cards/board/${boardId}`),
     ]);
     setColunas(resColunas.data);
     setCards(resCards.data);
@@ -188,7 +188,7 @@ export default function Kanban() {
         previsaoLiberacao: formEdit.previsaoLiberacao || null,
       });
       await carregarDados();
-      const atualizado = (await api.get('/api/cards')).data.find((c: Card) => c.id === cardSelecionado.id);
+      const atualizado = (await api.get(`/api/cards/board/${boardId}`)).data.find((c: Card) => c.id === cardSelecionado.id);
       if (atualizado) {
         await abrirCard(atualizado);
       } else {
@@ -306,6 +306,7 @@ export default function Kanban() {
         flexShrink: 0
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <Button variant="ghost" onClick={() => navigate('/boards')}>←</Button>
           <div style={{
             width: '36px', height: '36px',
             background: 'linear-gradient(135deg, #667eea, #764ba2)',
@@ -320,7 +321,7 @@ export default function Kanban() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           {isAdmin() && (
-            <Button variant="primary" onClick={() => navigate('/criar-card')}>+ Novo card</Button>
+            <Button variant="primary" onClick={() => navigate(`/criar-card/${boardId}`)}>+ Novo card</Button>
           )}
 
           <Button variant="secondary" onClick={() => navigate('/historico')}>Histórico</Button>
@@ -332,10 +333,6 @@ export default function Kanban() {
           {isAdmin() && (
             <Button variant="secondary" onClick={() => navigate('/usuarios')}>Usuários</Button>
           )}
-
-          <Button variant="secondary" onClick={() => navigate('/dashboard')}>
-            📊 Trocar Painel
-          </Button>
 
           <Button variant="secondary" onClick={logout}>Sair</Button>
 
@@ -468,7 +465,7 @@ export default function Kanban() {
 
                 <ColunaDroppavel colunaId={coluna.id}>
                   {cardsDaColuna(coluna.id).map((card) => (
-                  <CardArrastavel key={card.id} card={card} podeArrastar={isAdmin()}>
+                  <CardArrastavel key={card.id} id={card.id} podeArrastar={isAdmin()}>
                       <div onClick={() => abrirCard(card)} style={{
                         background: 'rgba(40,44,72,0.45)',
                         border: '1px solid rgba(255,255,255,0.09)',
@@ -686,10 +683,10 @@ export default function Kanban() {
                     Histórico
                   </div>
 
-                  <Timeline 
-                    historico={historico} 
-                    loading={loadingHistorico} 
-                    corDoEvento={corDaColuna} 
+                  <Timeline
+                    historico={historico}
+                    loading={loadingHistorico}
+                    corDoEvento={corDaColuna}
                   />
                 </div>
               </>

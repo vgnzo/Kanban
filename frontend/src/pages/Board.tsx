@@ -96,7 +96,11 @@ export default function Boards() {
           }}>
             {boards.map((board) => (
               <div key={board.id}
-                onClick={() => navigate(`/kanban/${board.id}`)}
+                onClick={() => navigate(
+                  board.tipo === 'EQUIPAMENTOS'
+                    ? `/kanban/${board.id}`
+                    : `/kanban-generico/${board.id}`
+                )}
                 style={{
                   background: 'rgba(255,255,255,0.05)',
                   border: '1px solid rgba(255,255,255,0.1)',
