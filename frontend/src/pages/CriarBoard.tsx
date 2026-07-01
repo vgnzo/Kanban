@@ -89,11 +89,16 @@ export default function CriarBoard() {
   return (
     <div style={{
       minHeight: '100vh',
+      maxHeight: '100vh',
+      overflowY: 'auto',
       background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
       fontFamily: "'Segoe UI', sans-serif"
     }}>
       <header style={{
-        background: 'rgba(255,255,255,0.05)',
+        position: 'sticky',
+        top: 0,
+        zIndex: 10,
+        background: 'rgba(26,26,46,0.85)',
         backdropFilter: 'blur(20px)',
         borderBottom: '1px solid rgba(255,255,255,0.1)',
         padding: '12px 24px',
@@ -108,7 +113,7 @@ export default function CriarBoard() {
         </div>
       </header>
 
-      <div style={{ display: 'flex', justifyContent: 'center', padding: '32px 16px' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '32px 16px 80px' }}>
         <div style={{
           width: '100%',
           maxWidth: '620px',
