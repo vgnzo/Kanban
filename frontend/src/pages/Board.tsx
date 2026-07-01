@@ -14,6 +14,7 @@ export default function Boards() {
   const navigate = useNavigate();
   const [boards, setBoards] = useState<Board[]>([]);
   const [loading, setLoading] = useState(true);
+  const [excluindo, setExcluindo] = useState<string | null>(null);
 
   useEffect(() => {
     carregarBoards();
@@ -25,6 +26,24 @@ export default function Boards() {
       setBoards(res.data);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const excluirBoard = async (e: React.MouseEvent, board: Board) => {
+    e.stopPropagation();
+    const confirmado = window.confirm(
+      `Excluir o quadro "${board.nome}"?\n\nIsso apaga todas as colunas e cards deste quadro. Esta ação não pode ser desfeita.`
+    );
+    if (!confirmado) return;
+
+    setExcluindo(board.id);
+    try {
+      await api.delete(`/api/boards/${board.id}`);
+      await carregarBoards();
+    } catch {
+      alert('Não foi possível excluir o quadro.');
+    } finally {
+      setExcluindo(null);
     }
   };
 
@@ -94,41 +113,75 @@ export default function Boards() {
             gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
             gap: '16px'
           }}>
-            {boards.map((board) => (
-              <div key={board.id}
-                onClick={() => navigate(
-                  board.tipo === 'EQUIPAMENTOS'
-                    ? `/kanban/${board.id}`
-                    : `/kanban-generico/${board.id}`
-                )}
-                style={{
-                  background: 'rgba(255,255,255,0.05)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: '12px',
-                  padding: '24px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.09)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
-              >
-                <div style={{
-                  width: '44px', height: '44px',
-                  background: board.tipo === 'EQUIPAMENTOS'
-                    ? 'linear-gradient(135deg, #E24B4A, #BA7517)'
-                    : 'linear-gradient(135deg, #667eea, #764ba2)',
-                  borderRadius: '10px',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '22px', marginBottom: '14px'
-                }}>{board.tipo === 'EQUIPAMENTOS' ? '🚜' : '📋'}</div>
-                <div style={{ color: 'white', fontSize: '16px', fontWeight: 600, marginBottom: '4px' }}>
-                  {board.nome}
+            {boards.map((board) => {
+              const podeExcluir = isAdmin() && board.tipo !== 'EQUIPAMENTOS';
+              return (
+                <div key={board.id}
+                  onClick={() => navigate(
+                    board.tipo === 'EQUIPAMENTOS'
+                      ? `/kanban/${board.id}`
+                      : `/kanban-generico/${board.id}`
+                  )}
+                  style={{
+                    position: 'relative',
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '12px',
+                    padding: '24px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    opacity: excluindo === board.id ? 0.5 : 1
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.09)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
+                >
+                  {podeExcluir && (
+                    <button
+                      onClick={(e) => excluirBoard(e, board)}
+                      disabled={excluindo === board.id}
+                      title="Excluir quadro"
+                      style={{
+                        position: 'absolute',
+                        top: '12px',
+                        right: '12px',
+                        width: '28px',
+                        height: '28px',
+                        background: 'rgba(226,75,74,0.15)',
+                        border: '1px solid rgba(226,75,74,0.3)',
+                        borderRadius: '8px',
+                        color: '#ff7875',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        lineHeight: 1,
+                        padding: 0
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(226,75,74,0.3)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(226,75,74,0.15)'; }}
+                    >
+                      🗑
+                    </button>
+                  )}
+                  <div style={{
+                    width: '44px', height: '44px',
+                    background: board.tipo === 'EQUIPAMENTOS'
+                      ? 'linear-gradient(135deg, #E24B4A, #BA7517)'
+                      : 'linear-gradient(135deg, #667eea, #764ba2)',
+                    borderRadius: '10px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '22px', marginBottom: '14px'
+                  }}>{board.tipo === 'EQUIPAMENTOS' ? '🚜' : '📋'}</div>
+                  <div style={{ color: 'white', fontSize: '16px', fontWeight: 600, marginBottom: '4px' }}>
+                    {board.nome}
+                  </div>
+                  <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>
+                    {board.tipo === 'EQUIPAMENTOS' ? 'Quadro de equipamentos' : 'Quadro personalizado'}
+                  </div>
                 </div>
-                <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>
-                  {board.tipo === 'EQUIPAMENTOS' ? 'Quadro de equipamentos' : 'Quadro personalizado'}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

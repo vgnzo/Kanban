@@ -63,6 +63,13 @@ export default function KanbanGenerico() {
   const [loadingHistorico, setLoadingHistorico] = useState(false);
   const [arquivando, setArquivando] = useState(false);
   const [cardArrastado, setCardArrastado] = useState<Card | null>(null);
+  const [mostrarFormColuna, setMostrarFormColuna] = useState(false);
+  const [editandoColuna, setEditandoColuna] = useState<string | null>(null);
+  const [nomeEditColuna, setNomeEditColuna] = useState('');
+  const [nomeNovaColuna, setNomeNovaColuna] = useState('');
+  const [corNovaColuna, setCorNovaColuna] = useState('#378ADD');
+  const [salvandoColuna, setSalvandoColuna] = useState(false);
+
 
   // filtros (genérico: texto, responsável, coluna — sem unidade)
   const [filtroTexto, setFiltroTexto] = useState('');
@@ -88,10 +95,10 @@ export default function KanbanGenerico() {
   );
 
   useEffect(() => {
-    if (boardId) carregarDados();
+    if (boardId) carregarTudo();
   }, [boardId]);
 
-  const carregarDados = async () => {
+  const carregarTudo = async () => {
     // busca o board (pra nomes dos campos extras), colunas e cards — todos por boardId
     const [resBoards, resColunas, resCards] = await Promise.all([
       api.get('/api/boards'),
@@ -102,6 +109,47 @@ export default function KanbanGenerico() {
     setBoard(boardAtual);
     setColunas(resColunas.data);
     setCards(resCards.data);
+  };
+
+  const adicionarColuna = async () => {
+    if (!nomeNovaColuna.trim()) return;
+    setSalvandoColuna(true);
+    try {
+      await api.post(`/api/colunas/board/${boardId}`, {
+        nome: nomeNovaColuna.trim(),
+        cor: corNovaColuna,
+      });
+      setNomeNovaColuna('');
+      setCorNovaColuna('#378ADD');
+      setMostrarFormColuna(false);
+      await carregarTudo();
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Não foi possível adicionar a coluna.');
+    } finally {
+      setSalvandoColuna(false);
+    }
+  };
+
+  const salvarNomeColuna = async (colunaId: string) => {
+    if (!nomeEditColuna.trim()) { setEditandoColuna(null); return; }
+    try {
+      await api.patch(`/api/colunas/${colunaId}`, { nome: nomeEditColuna.trim() });
+      setEditandoColuna(null);
+      await carregarTudo();
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Não foi possível renomear a coluna.');
+    }
+  };
+
+  const removerColuna = async (colunaId: string, nomeColuna: string) => {
+    const confirmado = window.confirm(`Remover a coluna "${nomeColuna}"?`);
+    if (!confirmado) return;
+    try {
+      await api.delete(`/api/colunas/${colunaId}`);
+      await carregarTudo();
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Não foi possível remover a coluna.');
+    }
   };
 
   // nomes dos campos extras (vêm do board); se não tiver nome, o campo não é usado
@@ -188,7 +236,7 @@ export default function KanbanGenerico() {
         valorExtra2: formEdit.valorExtra2 || null,
         valorExtra3: formEdit.valorExtra3 || null,
       });
-      await carregarDados();
+      await carregarTudo();
       const atualizado = (await api.get(`/api/cards/board/${boardId}`)).data
         .find((c: Card) => c.id === cardSelecionado.id);
       if (atualizado) {
@@ -204,9 +252,11 @@ export default function KanbanGenerico() {
   const moverCard = async (cardId: string, novaColunaId: string) => {
     if (!isAdmin()) return;
     await api.patch(`/api/cards/${cardId}/mover/${novaColunaId}`);
-    await carregarDados();
+    await carregarTudo();
     fecharCard();
   };
+
+  
 
   const aoComecarArraste = (event: DragStartEvent) => {
     const card = cards.find(c => c.id === String(event.active.id));
@@ -231,9 +281,9 @@ export default function KanbanGenerico() {
 
     try {
       await api.patch(`/api/cards/${cardId}/mover/${novaColunaId}`);
-      await carregarDados();
+      await carregarTudo();
     } catch {
-      await carregarDados();
+      await carregarTudo();
     }
   };
 
@@ -242,7 +292,7 @@ export default function KanbanGenerico() {
     setArquivando(true);
     try {
       await api.patch(`/api/cards/${cardId}/arquivar`);
-      await carregarDados();
+      await carregarTudo();
       fecharCard();
     } finally {
       setArquivando(false);
@@ -433,9 +483,69 @@ export default function KanbanGenerico() {
                     display: 'inline-block',
                     flexShrink: 0
                   }} />
-                  <span style={{ color: 'white', fontSize: '12px', fontWeight: 600, flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {coluna.nome}
-                  </span>
+                  {editandoColuna === coluna.id ? (
+                    <input
+                      autoFocus
+                      value={nomeEditColuna}
+                      onChange={(e) => setNomeEditColuna(e.target.value)}
+                      onBlur={() => salvarNomeColuna(coluna.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') salvarNomeColuna(coluna.id);
+                        if (e.key === 'Escape') setEditandoColuna(null);
+                      }}
+                      style={{
+                        flex: 1,
+                        minWidth: 0,
+                        padding: '2px 6px',
+                        background: 'rgba(255,255,255,0.1)',
+                        border: '1px solid rgba(255,255,255,0.25)',
+                        borderRadius: '4px',
+                        color: 'white',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        outline: 'none'
+                      }}
+                    />
+                  ) : (
+                    <span style={{ color: 'white', fontSize: '12px', fontWeight: 600, flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {coluna.nome}
+                    </span>
+                  )}
+                  {isAdmin() && editandoColuna !== coluna.id && (
+                    <button
+                      onClick={() => { setEditandoColuna(coluna.id); setNomeEditColuna(coluna.nome); }}
+                      title="Renomear coluna"
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'rgba(170, 170, 170, 0.4)',
+                        cursor: 'pointer',
+                        fontSize: '11px',
+                        padding: '2px',
+                        flexShrink: 0
+                      }}
+                    >
+                      ✏️
+                    </button>
+                  )}
+
+                  {isAdmin() && editandoColuna !== coluna.id && (
+                    <button
+                      onClick={() => removerColuna(coluna.id, coluna.nome)}
+                      title="Remover coluna"
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'rgba(251, 33, 29, 0.6)',
+                        cursor: 'pointer',
+                        fontSize: '20px',
+                        padding: '2px',
+                        flexShrink: 0
+                      }}
+                    >
+                      🗑
+                    </button>
+                  )}
                   <span style={{
                     background: 'rgba(255,255,255,0.1)',
                     color: 'rgba(255,255,255,0.6)',
@@ -496,6 +606,96 @@ export default function KanbanGenerico() {
               )}
             </div>
           ))}
+            {isAdmin() && (
+            <div style={{ flexShrink: 0, width: '220px', padding: '0 8px', alignSelf: 'flex-start' }}>
+              {!mostrarFormColuna ? (
+                <button
+                  onClick={() => setMostrarFormColuna(true)}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    background: 'rgba(255,255,255,0.04)',
+                    border: '1px dashed rgba(255,255,255,0.2)',
+                    borderRadius: '12px',
+                    color: 'rgba(255,255,255,0.6)',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    fontWeight: 600
+                  }}
+                >
+                  + Adicionar coluna
+                </button>
+              ) : (
+                <div style={{
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  borderRadius: '12px',
+                  padding: '12px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px'
+                }}>
+                  <input
+                    autoFocus
+                    value={nomeNovaColuna}
+                    onChange={(e) => setNomeNovaColuna(e.target.value)}
+                    placeholder="Nome da coluna"
+                    style={{
+                      padding: '8px 10px',
+                      background: 'rgba(255,255,255,0.08)',
+                      border: '1px solid rgba(255,255,255,0.15)',
+                      borderRadius: '6px',
+                      color: 'white',
+                      fontSize: '13px',
+                      outline: 'none'
+                    }}
+                  />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input
+                      type="color"
+                      value={corNovaColuna}
+                      onChange={(e) => setCorNovaColuna(e.target.value)}
+                      style={{ width: '36px', height: '32px', background: 'none', border: 'none', cursor: 'pointer' }}
+                    />
+                    <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px' }}>Cor da coluna</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      onClick={adicionarColuna}
+                      disabled={salvandoColuna}
+                      style={{
+                        flex: 1,
+                        padding: '8px',
+                        background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                        border: 'none',
+                        borderRadius: '6px',
+                        color: 'white',
+                        cursor: salvandoColuna ? 'not-allowed' : 'pointer',
+                        fontSize: '12px',
+                        fontWeight: 600
+                      }}
+                    >
+                      {salvandoColuna ? 'Salvando...' : 'Adicionar'}
+                    </button>
+                    <button
+                      onClick={() => { setMostrarFormColuna(false); setNomeNovaColuna(''); }}
+                      style={{
+                        padding: '8px 12px',
+                        background: 'rgba(255,255,255,0.05)',
+                        border: '1px solid rgba(255,255,255,0.15)',
+                        borderRadius: '6px',
+                        color: 'rgba(255,255,255,0.7)',
+                        cursor: 'pointer',
+                        fontSize: '12px'
+                      }}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <DragOverlay>
