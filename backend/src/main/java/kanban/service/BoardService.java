@@ -8,23 +8,29 @@ import kanban.repository.BoardRepository;
 import kanban.repository.ColunaRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import kanban.entity.Card;
+import kanban.repository.CardRepository;
+import kanban.repository.HistoricoCardRepository;
 import java.util.List;
 import java.util.UUID;
 
 @Service
 public class BoardService {
 
-    private final BoardRepository boardRepository;
+  private final BoardRepository boardRepository;
     private final ColunaRepository colunaRepository;
+    private final CardRepository cardRepository;
+    private final HistoricoCardRepository historicoCardRepository;
 
     public BoardService(BoardRepository boardRepository,
-        ColunaRepository colunaRepository
-    ){
+                        ColunaRepository colunaRepository,
+                        CardRepository cardRepository,
+                        HistoricoCardRepository historicoCardRepository) {
         this.boardRepository = boardRepository;
         this.colunaRepository = colunaRepository;
+        this.cardRepository = cardRepository;
+        this.historicoCardRepository = historicoCardRepository;
     }
-
 
     public BoardResponse buscarPorId(UUID id){
         Board board = boardRepository.findById(id)
@@ -57,7 +63,7 @@ public class BoardService {
         return toResponse(salvo);
     }
 
-    @Transactional
+  @Transactional
     public void deletar(UUID id) {
         Board board = boardRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Quadro não encontrado"));
@@ -67,6 +73,17 @@ public class BoardService {
         }
 
         List<Coluna> colunas = colunaRepository.findByBoardIdOrderByOrdemAsc(id);
+
+        for (Coluna coluna : colunas) {
+            List<Card> cards = cardRepository.findByColunaId(coluna.getId());
+            for (Card card : cards) {
+                historicoCardRepository.deleteAll(
+                    historicoCardRepository.findByCardIdOrderByCriadoEmAsc(card.getId())
+                );
+            }
+            cardRepository.deleteAll(cards);
+        }
+
         colunaRepository.deleteAll(colunas);
         boardRepository.delete(board);
     }
