@@ -50,13 +50,12 @@ export default function CriarCardGenerico() {
 
   const carregarDados = async () => {
     try {
-      const [resBoards, resColunas, resUsuarios] = await Promise.all([
-        api.get('/api/boards'),
-        api.get(`/api/colunas/board/${boardId}`),
-        api.get('/api/usuarios'),
-      ]);
-      const boardAtual = resBoards.data.find((b: Board) => b.id === boardId) || null;
-      setBoard(boardAtual);
+     const [resBoard, resColunas, resUsuarios] = await Promise.all([
+      api.get(`/api/boards/${boardId}`),
+      api.get(`/api/colunas/board/${boardId}`),
+      api.get('/api/usuarios/lista-simples'),
+    ]);
+    setBoard(resBoard.data);
       setColunas(resColunas.data);
       setUsuarios(resUsuarios.data);
     } catch {

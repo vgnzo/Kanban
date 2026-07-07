@@ -57,17 +57,30 @@ interface Equipamento {
   modelo: string;
 }
 
+interface Board {
+  id: string;
+  nome: string;
+  tipo: string;
+  nivelAcesso: string | null;
+}
+
 export default function Kanban() {
   const { boardId } = useParams<{ boardId: string }>();
   const { usuario, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
+  const [souDono, setSouDono] = useState(false);
   const [colunas, setColunas] = useState<Coluna[]>([]);
   const [cards, setCards] = useState<Card[]>([]);
+  const [nivelAcesso, setNivelAcesso] = useState<string | null>(null);
   const [cardSelecionado, setCardSelecionado] = useState<Card | null>(null);
   const [historico, setHistorico] = useState<Historico[]>([]);
   const [loadingHistorico, setLoadingHistorico] = useState(false);
   const [arquivando, setArquivando] = useState(false);
   const [cardArrastado, setCardArrastado] = useState<Card | null>(null);
+
+  // pode editar o conteúdo (cards) se tem nível EDITAR neste quadro
+  // (vale tanto pro admin dono quanto pro user com permissão de editar)
+  const podeEditar = nivelAcesso === 'EDITAR';
 
   // filtros
   const [filtroTexto, setFiltroTexto] = useState('');
@@ -98,10 +111,14 @@ export default function Kanban() {
   }, [boardId]);
 
   const carregarDados = async () => {
-    const [resColunas, resCards] = await Promise.all([
+  const [resBoard, resColunas, resCards] = await Promise.all([
+      api.get(`/api/boards/${boardId}`),
       api.get(`/api/colunas/board/${boardId}`),
       api.get(`/api/cards/board/${boardId}`),
     ]);
+    const boardAtual = resBoard.data;
+    setNivelAcesso(boardAtual?.nivelAcesso || null);
+    setSouDono(boardAtual?.souDono || false);
     setColunas(resColunas.data);
     setCards(resCards.data);
   };
@@ -166,7 +183,7 @@ export default function Kanban() {
     setEditando(true);
     try {
       const [resUsuarios, resEquip] = await Promise.all([
-        api.get('/api/usuarios'),
+        api.get('/api/usuarios/lista-simples'),
         api.get('/api/equipamentos'),
       ]);
       setUsuarios(resUsuarios.data);
@@ -200,7 +217,7 @@ export default function Kanban() {
   };
 
   const moverCard = async (cardId: string, novaColunaId: string) => {
-    if (!isAdmin()) return;
+    if (!podeEditar) return;
     await api.patch(`/api/cards/${cardId}/mover/${novaColunaId}`);
     await carregarDados();
     fecharCard();
@@ -236,7 +253,7 @@ export default function Kanban() {
   };
 
   const arquivarCard = async (cardId: string) => {
-    if (!isAdmin()) return;
+    if (!podeEditar) return;
     setArquivando(true);
     try {
       await api.patch(`/api/cards/${cardId}/arquivar`);
@@ -320,7 +337,7 @@ export default function Kanban() {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          {isAdmin() && (
+          {podeEditar && (
             <Button variant="primary" onClick={() => navigate(`/criar-card/${boardId}`)}>+ Novo card</Button>
           )}
 
@@ -332,6 +349,10 @@ export default function Kanban() {
 
           {isAdmin() && (
             <Button variant="secondary" onClick={() => navigate('/usuarios')}>Usuários</Button>
+          )}
+
+          {souDono && (
+            <Button variant="secondary" onClick={() => navigate(`/solicitacoes/${boardId}`)}>Solicitações</Button>
           )}
 
           <Button variant="secondary" onClick={logout}>Sair</Button>
@@ -408,10 +429,12 @@ export default function Kanban() {
       </div>
 
       <DndContext sensors={sensors} onDragStart={aoComecarArraste} onDragEnd={aoSoltar}>
-        <div
+              <div
           onWheel={(e) => {
-            e.preventDefault();
-            e.currentTarget.scrollLeft += e.deltaY;
+            // só converte vertical→horizontal se não for um scroll horizontal nativo (trackpad)
+            if (e.deltaY !== 0) {
+              e.currentTarget.scrollLeft += e.deltaY;
+            }
           }}
           style={{
             display: 'flex',
@@ -465,7 +488,7 @@ export default function Kanban() {
 
                 <ColunaDroppavel colunaId={coluna.id}>
                   {cardsDaColuna(coluna.id).map((card) => (
-                  <CardArrastavel key={card.id} id={card.id} podeArrastar={isAdmin()}>
+                  <CardArrastavel key={card.id} id={card.id} podeArrastar={podeEditar}>
                       <div onClick={() => abrirCard(card)} style={{
                         background: 'rgba(40,44,72,0.45)',
                         border: '1px solid rgba(255,255,255,0.09)',
@@ -649,7 +672,7 @@ export default function Kanban() {
                   ))}
                 </div>
 
-                {isAdmin() && (
+                {podeEditar && (
                   <div style={{ marginBottom: '20px' }}>
                     <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
                       Mover para

@@ -43,6 +43,7 @@ interface Board {
   campoExtra1: string | null;
   campoExtra2: string | null;
   campoExtra3: string | null;
+  nivelAcesso: string | null;
 }
 
 interface Usuario {
@@ -54,8 +55,9 @@ export default function KanbanGenerico() {
   const { boardId } = useParams<{ boardId: string }>();
   const { usuario, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
-
+  const [souDono, setSouDono] = useState(false);
   const [board, setBoard] = useState<Board | null>(null);
+  const [nivelAcesso, setNivelAcesso] = useState<string | null>(null);
   const [colunas, setColunas] = useState<Coluna[]>([]);
   const [cards, setCards] = useState<Card[]>([]);
   const [cardSelecionado, setCardSelecionado] = useState<Card | null>(null);
@@ -70,6 +72,9 @@ export default function KanbanGenerico() {
   const [corNovaColuna, setCorNovaColuna] = useState('#378ADD');
   const [salvandoColuna, setSalvandoColuna] = useState(false);
 
+  // pode editar o conteúdo (cards/colunas) se tem nível EDITAR neste quadro
+  // (vale tanto pro admin dono quanto pro user com permissão de editar)
+  const podeEditar = nivelAcesso === 'EDITAR';
 
   // filtros (genérico: texto, responsável, coluna — sem unidade)
   const [filtroTexto, setFiltroTexto] = useState('');
@@ -99,14 +104,16 @@ export default function KanbanGenerico() {
   }, [boardId]);
 
   const carregarTudo = async () => {
-    // busca o board (pra nomes dos campos extras), colunas e cards — todos por boardId
-    const [resBoards, resColunas, resCards] = await Promise.all([
-      api.get('/api/boards'),
-      api.get(`/api/colunas/board/${boardId}`),
-      api.get(`/api/cards/board/${boardId}`),
-    ]);
-    const boardAtual = resBoards.data.find((b: Board) => b.id === boardId) || null;
-    setBoard(boardAtual);
+    // busca o board (pra nomes dos campos extras + nivelAcesso), colunas e cards — todos por boardId
+  const [resBoard, resColunas, resCards] = await Promise.all([
+  api.get(`/api/boards/${boardId}`),               // 👈 busca SÓ este board (rápido)
+  api.get(`/api/colunas/board/${boardId}`),
+  api.get(`/api/cards/board/${boardId}`),
+]);
+const boardAtual = resBoard.data;                  // 👈 já vem o board direto
+setBoard(boardAtual);
+setNivelAcesso(boardAtual?.nivelAcesso || null);
+setSouDono(boardAtual?.souDono || false);
     setColunas(resColunas.data);
     setCards(resCards.data);
   };
@@ -216,8 +223,7 @@ export default function KanbanGenerico() {
     });
     setEditando(true);
     try {
-      const resUsuarios = await api.get('/api/usuarios');
-      setUsuarios(resUsuarios.data);
+const resUsuarios = await api.get('/api/usuarios/lista-simples');      setUsuarios(resUsuarios.data);
     } catch {
       // segue sem a lista se falhar
     }
@@ -250,13 +256,11 @@ export default function KanbanGenerico() {
   };
 
   const moverCard = async (cardId: string, novaColunaId: string) => {
-    if (!isAdmin()) return;
+    if (!podeEditar) return;
     await api.patch(`/api/cards/${cardId}/mover/${novaColunaId}`);
     await carregarTudo();
     fecharCard();
   };
-
-  
 
   const aoComecarArraste = (event: DragStartEvent) => {
     const card = cards.find(c => c.id === String(event.active.id));
@@ -288,7 +292,7 @@ export default function KanbanGenerico() {
   };
 
   const arquivarCard = async (cardId: string) => {
-    if (!isAdmin()) return;
+    if (!podeEditar) return;
     setArquivando(true);
     try {
       await api.patch(`/api/cards/${cardId}/arquivar`);
@@ -375,8 +379,11 @@ export default function KanbanGenerico() {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          {isAdmin() && (
+          {podeEditar && (
             <Button variant="primary" onClick={() => navigate(`/criar-card-generico/${boardId}`)}>+ Novo card</Button>
+          )}
+        {souDono && (
+            <Button variant="secondary" onClick={() => navigate(`/solicitacoes/${boardId}`)}>Solicitações</Button>
           )}
           <Button variant="secondary" onClick={() => navigate(`/historico-generico/${boardId}`)}>Histórico</Button>
           <Button variant="secondary" onClick={logout}>Sair</Button>
@@ -441,19 +448,21 @@ export default function KanbanGenerico() {
       </div>
 
       <DndContext sensors={sensors} onDragStart={aoComecarArraste} onDragEnd={aoSoltar}>
-        <div
-          onWheel={(e) => {
-            e.preventDefault();
+      <div
+        onWheel={(e) => {
+          // só converte vertical→horizontal se não for um scroll horizontal nativo (trackpad)
+          if (e.deltaY !== 0) {
             e.currentTarget.scrollLeft += e.deltaY;
-          }}
-          style={{
-            display: 'flex',
-            flex: 1,
-            overflowX: 'auto',
-            overflowY: 'hidden',
-            padding: '16px',
-            gap: '0',
-          }}>
+          }
+        }}
+        style={{
+          display: 'flex',
+          flex: 1,
+          overflowX: 'auto',
+          overflowY: 'hidden',
+          padding: '16px',
+          gap: '0',
+        }}>
           {colunasVisiveis.map((coluna, index) => (
             <div key={coluna.id} style={{ display: 'flex', flexShrink: 0 }}>
               <div style={{
@@ -511,7 +520,7 @@ export default function KanbanGenerico() {
                       {coluna.nome}
                     </span>
                   )}
-                  {isAdmin() && editandoColuna !== coluna.id && (
+                  {podeEditar && editandoColuna !== coluna.id && (
                     <button
                       onClick={() => { setEditandoColuna(coluna.id); setNomeEditColuna(coluna.nome); }}
                       title="Renomear coluna"
@@ -529,7 +538,7 @@ export default function KanbanGenerico() {
                     </button>
                   )}
 
-                  {isAdmin() && editandoColuna !== coluna.id && (
+                  {podeEditar && editandoColuna !== coluna.id && (
                     <button
                       onClick={() => removerColuna(coluna.id, coluna.nome)}
                       title="Remover coluna"
@@ -558,7 +567,7 @@ export default function KanbanGenerico() {
 
                 <ColunaDroppavel colunaId={coluna.id}>
                   {cardsDaColuna(coluna.id).map((card) => (
-                    <CardArrastavel key={card.id} id={card.id} podeArrastar={isAdmin()}>
+                    <CardArrastavel key={card.id} id={card.id} podeArrastar={podeEditar}>
                       <div onClick={() => abrirCard(card)} style={{
                         background: 'rgba(255,255,255,0.06)',
                         border: '1px solid rgba(255,255,255,0.09)',
@@ -606,7 +615,7 @@ export default function KanbanGenerico() {
               )}
             </div>
           ))}
-            {isAdmin() && (
+            {podeEditar && (
             <div style={{ flexShrink: 0, width: '220px', padding: '0 8px', alignSelf: 'flex-start' }}>
               {!mostrarFormColuna ? (
                 <button
@@ -829,7 +838,7 @@ export default function KanbanGenerico() {
                   ))}
                 </div>
 
-                {isAdmin() && (
+                {podeEditar && (
                   <div style={{ marginBottom: '20px' }}>
                     <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
                       Mover para

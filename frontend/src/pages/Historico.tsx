@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import Button from '../components/Button';
 
@@ -26,10 +27,12 @@ interface Historico {
 
 export default function Historico() {
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
   const [cards, setCards] = useState<Card[]>([]);
   const [selecionado, setSelecionado] = useState<Card | null>(null);
   const [historico, setHistorico] = useState<Historico[]>([]);
   const [loadingHistorico, setLoadingHistorico] = useState(false);
+  const [desarquivando, setDesarquivando] = useState(false);
 
   // filtros
   const [filtroTexto, setFiltroTexto] = useState('');
@@ -65,6 +68,20 @@ export default function Historico() {
   const fechar = () => {
     setSelecionado(null);
     setHistorico([]);
+  };
+
+  const desarquivar = async () => {
+    if (!selecionado || !isAdmin()) return;
+    setDesarquivando(true);
+    try {
+      await api.patch(`/api/cards/${selecionado.id}/desarquivar`);
+      fechar();
+      await carregarArquivados(); // recarrega — o card desarquivado sai dos arquivados
+    } catch {
+      alert('Não foi possível desarquivar o card.');
+    } finally {
+      setDesarquivando(false);
+    }
   };
 
   const formatarData = (iso: string) => {
@@ -109,7 +126,7 @@ export default function Historico() {
         alignItems: 'center',
         gap: '16px'
       }}>
-        <Button variant="ghost" onClick={() => navigate('/kanban')}>← Voltar</Button>
+        <Button variant="ghost" onClick={() => navigate('/boards')}>← Voltar</Button>
         <div>
           <div style={{ color: 'white', fontWeight: 600, fontSize: '16px' }}>Histórico</div>
           <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>Problemas resolvidos e arquivados</div>
@@ -229,6 +246,18 @@ export default function Historico() {
               </div>
               <div style={{ color: 'white', fontSize: '13px' }}>{selecionado.titulo}</div>
             </div>
+
+            {/* botão desarquivar — só admin */}
+            {isAdmin() && (
+              <div style={{ marginBottom: '20px' }}>
+                <Button variant="primary" disabled={desarquivando} onClick={desarquivar} style={{ width: '100%' }}>
+                  {desarquivando ? 'Desarquivando...' : '↩ Desarquivar card'}
+                </Button>
+                <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', margin: '8px 0 0', textAlign: 'center' }}>
+                  O card volta para o quadro, na coluna onde estava.
+                </p>
+              </div>
+            )}
 
             <div>
               <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.8px' }}>

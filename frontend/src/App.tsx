@@ -12,6 +12,7 @@ import CriarCard from './pages/CriarCard';
 import GerenciarUsuarios from './pages/GerenciarUsuarios';
 import GerenciarEquipamentos from './pages/GerenciarEquipamentos';
 import Historico from './pages/Historico';
+import Solicitacoes from './pages/Solicitacoes';
 import { useAuth } from './contexts/AuthContext';
 
 function RotaProtegida({ children }: { children: React.ReactNode }) {
@@ -38,6 +39,12 @@ function App() {
           <Route path="/criar-board" element={
             <RotaProtegida>
               <CriarBoard />
+            </RotaProtegida>
+          } />
+
+          <Route path="/solicitacoes/:boardId" element={
+            <RotaProtegida>
+              <Solicitacoes />
             </RotaProtegida>
           } />
 

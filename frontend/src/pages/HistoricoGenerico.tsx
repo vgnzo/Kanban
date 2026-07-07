@@ -21,6 +21,7 @@ interface Board {
   campoExtra1: string | null;
   campoExtra2: string | null;
   campoExtra3: string | null;
+  nivelAcesso: string | null;
 }
 
 export default function HistoricoGenerico() {
@@ -28,10 +29,15 @@ export default function HistoricoGenerico() {
   const navigate = useNavigate();
 
   const [board, setBoard] = useState<Board | null>(null);
+  const [nivelAcesso, setNivelAcesso] = useState<string | null>(null);
   const [cards, setCards] = useState<Card[]>([]);
   const [selecionado, setSelecionado] = useState<Card | null>(null);
   const [historico, setHistorico] = useState<any[]>([]);
   const [loadingHistorico, setLoadingHistorico] = useState(false);
+  const [desarquivando, setDesarquivando] = useState(false);
+
+  // pode desarquivar se tem nível EDITAR neste quadro
+  const podeEditar = nivelAcesso === 'EDITAR';
 
   useEffect(() => {
     if (boardId) carregar();
@@ -39,11 +45,12 @@ export default function HistoricoGenerico() {
 
   const carregar = async () => {
     try {
-      const [resBoards, resCards] = await Promise.all([
-        api.get('/api/boards'),
-        api.get(`/api/cards/board/${boardId}/arquivados`),
-      ]);
-      setBoard(resBoards.data.find((b: Board) => b.id === boardId) || null);
+   const [resBoard, resCards] = await Promise.all([
+  api.get(`/api/boards/${boardId}`),
+  api.get(`/api/cards/board/${boardId}/arquivados`),
+]);
+setBoard(resBoard.data);
+setNivelAcesso(resBoard.data?.nivelAcesso || null);
       setCards(resCards.data);
     } catch {
       setCards([]);
@@ -74,6 +81,20 @@ export default function HistoricoGenerico() {
   const fechar = () => {
     setSelecionado(null);
     setHistorico([]);
+  };
+
+  const desarquivar = async () => {
+    if (!selecionado || !podeEditar) return;
+    setDesarquivando(true);
+    try {
+      await api.patch(`/api/cards/${selecionado.id}/desarquivar`);
+      fechar();
+      await carregar(); // recarrega a lista — o card desarquivado sai dos arquivados
+    } catch {
+      alert('Não foi possível desarquivar a tarefa.');
+    } finally {
+      setDesarquivando(false);
+    }
   };
 
   return (
@@ -185,6 +206,18 @@ export default function HistoricoGenerico() {
                   Descrição
                 </div>
                 <div style={{ color: 'white', fontSize: '13px' }}>{selecionado.descricao}</div>
+              </div>
+            )}
+
+            {/* botão desarquivar — só pra quem tem EDITAR */}
+            {podeEditar && (
+              <div style={{ marginBottom: '20px' }}>
+                <Button variant="primary" disabled={desarquivando} onClick={desarquivar} style={{ width: '100%' }}>
+                  {desarquivando ? 'Desarquivando...' : '↩ Desarquivar tarefa'}
+                </Button>
+                <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', margin: '8px 0 0', textAlign: 'center' }}>
+                  A tarefa volta para o quadro, na coluna onde estava.
+                </p>
               </div>
             )}
 
