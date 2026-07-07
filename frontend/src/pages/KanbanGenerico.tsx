@@ -53,7 +53,7 @@ interface Usuario {
 
 export default function KanbanGenerico() {
   const { boardId } = useParams<{ boardId: string }>();
-  const { usuario, logout, isAdmin } = useAuth();
+  const { usuario, logout } = useAuth();
   const navigate = useNavigate();
   const [souDono, setSouDono] = useState(false);
   const [board, setBoard] = useState<Board | null>(null);

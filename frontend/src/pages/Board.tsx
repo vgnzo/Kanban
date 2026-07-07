@@ -13,7 +13,7 @@ interface Board {
 }
 
 export default function Boards() {
-  const { usuario, logout, isAdmin } = useAuth();
+  const { usuario, logout } = useAuth();
   const navigate = useNavigate();
   const [boards, setBoards] = useState<Board[]>([]);
   const [loading, setLoading] = useState(true);
