@@ -342,11 +342,11 @@ public CardResponse editarGenerico(UUID cardId, CardGenericoUpdateRequest reques
 
 @Transactional
     public CardResponse resetarCard(UUID cardId, ResetCardRequest request, String emailUsuario) {
-        // 1. busca o card original
+        // 1. busca o card original (só pra achar o board/coluna)
         Card original = cardRepository.findById(cardId)
                 .orElseThrow(() -> new RuntimeException("Card não encontrado"));
 
-        // 2. descobre o board pela coluna do original, e pega a primeira coluna (menor ordem)
+        // 2. descobre o board e pega a primeira coluna
         UUID boardId = original.getColuna().getBoard().getId();
         List<Coluna> colunas = colunaRepository.findByBoardIdOrderByOrdemAsc(boardId);
         if (colunas.isEmpty()) {
@@ -354,17 +354,18 @@ public CardResponse editarGenerico(UUID cardId, CardGenericoUpdateRequest reques
         }
         Coluna primeiraColuna = colunas.get(0);
 
-        // 3. cria o card novo, copiando só o que os toggles pedirem
+        // 3. cria o card novo. Se o toggle está ligado, usa o valor enviado (editado);
+        //    se está desligado, deixa vazio.
         Card novo = new Card();
         novo.setColuna(primeiraColuna);
-        novo.setTitulo(request.copiarTitulo() && original.getTitulo() != null
-                ? original.getTitulo() : "Novo card");
-        novo.setDescricao(request.copiarDescricao() ? original.getDescricao() : null);
-        novo.setValorExtra1(request.copiarExtra1() ? original.getValorExtra1() : null);
-        novo.setValorExtra2(request.copiarExtra2() ? original.getValorExtra2() : null);
-        novo.setValorExtra3(request.copiarExtra3() ? original.getValorExtra3() : null);
+        novo.setTitulo(request.copiarTitulo() && request.titulo() != null && !request.titulo().isBlank()
+                ? request.titulo() : "Novo card");
+        novo.setDescricao(request.copiarDescricao() ? request.descricao() : null);
+        novo.setValorExtra1(request.copiarExtra1() ? request.valorExtra1() : null);
+        novo.setValorExtra2(request.copiarExtra2() ? request.valorExtra2() : null);
+        novo.setValorExtra3(request.copiarExtra3() ? request.valorExtra3() : null);
 
-        // 4. salva e registra "Card criado" (histórico limpo, só esse registro)
+        // 4. salva e registra histórico limpo
         Card salvo = cardRepository.save(novo);
         registrarHistorico(salvo, null, primeiraColuna, emailUsuario, "Card criado (cópia)");
 

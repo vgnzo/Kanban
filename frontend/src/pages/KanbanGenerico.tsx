@@ -67,25 +67,26 @@ export default function KanbanGenerico() {
   const [cardArrastado, setCardArrastado] = useState<Card | null>(null);
   const [mostrarFormColuna, setMostrarFormColuna] = useState(false);
   const [editandoColuna, setEditandoColuna] = useState<string | null>(null);
-  const [mostrarReset, setMostrarReset] = useState(false);
-  const [gerandoCopia, setGerandoCopia] = useState(false);
-  const [togglesCopia, setTogglesCopia] = useState({
-    copiarTitulo: true,
-    copiarDescricao: true,
-    copiarExtra1: true,
-    copiarExtra2: true,
-    copiarExtra3: true,
-  });
   const [nomeEditColuna, setNomeEditColuna] = useState('');
   const [nomeNovaColuna, setNomeNovaColuna] = useState('');
   const [corNovaColuna, setCorNovaColuna] = useState('#378ADD');
   const [salvandoColuna, setSalvandoColuna] = useState(false);
 
+  // reset / gerar cópia
+  const [mostrarReset, setMostrarReset] = useState(false);
+  const [gerandoCopia, setGerandoCopia] = useState(false);
+  const [copiaConfig, setCopiaConfig] = useState({
+    copiarTitulo: true, titulo: '',
+    copiarDescricao: true, descricao: '',
+    copiarExtra1: true, valorExtra1: '',
+    copiarExtra2: true, valorExtra2: '',
+    copiarExtra3: true, valorExtra3: '',
+  });
+
   // pode editar o conteúdo (cards/colunas) se tem nível EDITAR neste quadro
-  // (vale tanto pro admin dono quanto pro user com permissão de editar)
   const podeEditar = nivelAcesso === 'EDITAR';
 
-  // filtros (genérico: texto, responsável, coluna — sem unidade)
+  // filtros
   const [filtroTexto, setFiltroTexto] = useState('');
   const [filtroResponsavel, setFiltroResponsavel] = useState('');
   const [filtroColuna, setFiltroColuna] = useState('');
@@ -113,16 +114,15 @@ export default function KanbanGenerico() {
   }, [boardId]);
 
   const carregarTudo = async () => {
-    // busca o board (pra nomes dos campos extras + nivelAcesso), colunas e cards — todos por boardId
-  const [resBoard, resColunas, resCards] = await Promise.all([
-  api.get(`/api/boards/${boardId}`),               // 👈 busca SÓ este board (rápido)
-  api.get(`/api/colunas/board/${boardId}`),
-  api.get(`/api/cards/board/${boardId}`),
-]);
-const boardAtual = resBoard.data;                  // 👈 já vem o board direto
-setBoard(boardAtual);
-setNivelAcesso(boardAtual?.nivelAcesso || null);
-setSouDono(boardAtual?.souDono || false);
+    const [resBoard, resColunas, resCards] = await Promise.all([
+      api.get(`/api/boards/${boardId}`),
+      api.get(`/api/colunas/board/${boardId}`),
+      api.get(`/api/cards/board/${boardId}`),
+    ]);
+    const boardAtual = resBoard.data;
+    setBoard(boardAtual);
+    setNivelAcesso(boardAtual?.nivelAcesso || null);
+    setSouDono(boardAtual?.souDono || false);
     setColunas(resColunas.data);
     setCards(resCards.data);
   };
@@ -165,6 +165,21 @@ setSouDono(boardAtual?.souDono || false);
       await carregarTudo();
     } catch (err: any) {
       alert(err.response?.data?.message || 'Não foi possível remover a coluna.');
+    }
+  };
+
+  const gerarCopia = async () => {
+    if (!cardSelecionado) return;
+    setGerandoCopia(true);
+    try {
+      await api.post(`/api/cards/${cardSelecionado.id}/resetar`, copiaConfig);
+      await carregarTudo();
+      setMostrarReset(false);
+      fecharCard();
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Não foi possível gerar a cópia.');
+    } finally {
+      setGerandoCopia(false);
     }
   };
 
@@ -232,7 +247,8 @@ setSouDono(boardAtual?.souDono || false);
     });
     setEditando(true);
     try {
-const resUsuarios = await api.get('/api/usuarios/lista-simples');      setUsuarios(resUsuarios.data);
+      const resUsuarios = await api.get('/api/usuarios/lista-simples');
+      setUsuarios(resUsuarios.data);
     } catch {
       // segue sem a lista se falhar
     }
@@ -312,21 +328,6 @@ const resUsuarios = await api.get('/api/usuarios/lista-simples');      setUsuari
     }
   };
 
-  const gerarCopia = async () => {
-    if (!cardSelecionado) return;
-    setGerandoCopia(true);
-    try {
-      await api.post(`/api/cards/${cardSelecionado.id}/resetar`, togglesCopia);
-      await carregarTudo();
-      setMostrarReset(false);
-      fecharCard();
-    } catch (err: any) {
-      alert(err.response?.data?.message || 'Não foi possível gerar a cópia.');
-    } finally {
-      setGerandoCopia(false);
-    }
-  };
-
   const cardsDaColuna = (colunaId: string) =>
     aplicarFiltros(cards.filter((c) => c.colunaId === colunaId));
 
@@ -345,7 +346,6 @@ const resUsuarios = await api.get('/api/usuarios/lista-simples');      setUsuari
     return col ? col.cor : 'rgba(255,255,255,0.4)';
   };
 
-  // valor de um campo extra de um card pela chave
   const valorCampo = (card: Card, chave: 'valorExtra1' | 'valorExtra2' | 'valorExtra3') => card[chave];
 
   const inputStyle = {
@@ -832,7 +832,16 @@ const resUsuarios = await api.get('/api/usuarios/lista-simples');      setUsuari
                       </Button>
                     </div>
                     <button
-                      onClick={() => setMostrarReset(true)}
+                      onClick={() => {
+                        setCopiaConfig({
+                          copiarTitulo: true, titulo: cardSelecionado.titulo || '',
+                          copiarDescricao: true, descricao: cardSelecionado.descricao || '',
+                          copiarExtra1: true, valorExtra1: cardSelecionado.valorExtra1 || '',
+                          copiarExtra2: true, valorExtra2: cardSelecionado.valorExtra2 || '',
+                          copiarExtra3: true, valorExtra3: cardSelecionado.valorExtra3 || '',
+                        });
+                        setMostrarReset(true);
+                      }}
                       style={{
                         width: '100%', marginTop: '10px', padding: '10px',
                         background: 'rgba(29,158,117,0.15)',
@@ -871,43 +880,55 @@ const resUsuarios = await api.get('/api/usuarios/lista-simples');      setUsuari
           <div onClick={(e) => e.stopPropagation()} style={{
             background: 'linear-gradient(135deg, #1a1a2e, #16213e)',
             border: '1px solid rgba(255,255,255,0.15)',
-            borderRadius: '16px', padding: '28px', width: '90%', maxWidth: '420px'
+            borderRadius: '16px', padding: '28px', width: '90%', maxWidth: '460px',
+            maxHeight: '85vh', overflowY: 'auto'
           }}>
             <h3 style={{ color: 'white', margin: '0 0 6px' }}>Gerar cópia do card</h3>
             <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', margin: '0 0 20px' }}>
-              A cópia começa na primeira coluna, com histórico limpo. Escolha o que copiar:
+              A cópia começa na primeira coluna, com histórico limpo. Marque o que copiar e ajuste os valores:
             </p>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '24px' }}>
               {[
-                { chave: 'copiarTitulo' as const, label: 'Título', valor: cardSelecionado.titulo },
-                { chave: 'copiarDescricao' as const, label: 'Descrição', valor: cardSelecionado.descricao },
-                ...(board?.campoExtra1 ? [{ chave: 'copiarExtra1' as const, label: board.campoExtra1, valor: cardSelecionado.valorExtra1 }] : []),
-                ...(board?.campoExtra2 ? [{ chave: 'copiarExtra2' as const, label: board.campoExtra2, valor: cardSelecionado.valorExtra2 }] : []),
-                ...(board?.campoExtra3 ? [{ chave: 'copiarExtra3' as const, label: board.campoExtra3, valor: cardSelecionado.valorExtra3 }] : []),
-              ].map(item => (
-                <label key={item.chave} style={{
-                  display: 'flex', alignItems: 'center', gap: '10px',
-                  background: 'rgba(255,255,255,0.05)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: '8px', padding: '10px 14px', cursor: 'pointer'
-                }}>
-                  <input
-                    type="checkbox"
-                    checked={togglesCopia[item.chave]}
-                    onChange={(e) => setTogglesCopia({ ...togglesCopia, [item.chave]: e.target.checked })}
-                    style={{ width: '16px', height: '16px', cursor: 'pointer' }}
-                  />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ color: 'white', fontSize: '13px', fontWeight: 500 }}>{item.label}</div>
-                    {item.valor && (
-                      <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {item.valor}
-                      </div>
+                { toggle: 'copiarTitulo' as const, campo: 'titulo' as const, label: 'Título' },
+                { toggle: 'copiarDescricao' as const, campo: 'descricao' as const, label: 'Descrição' },
+                ...(board?.campoExtra1 ? [{ toggle: 'copiarExtra1' as const, campo: 'valorExtra1' as const, label: board.campoExtra1 }] : []),
+                ...(board?.campoExtra2 ? [{ toggle: 'copiarExtra2' as const, campo: 'valorExtra2' as const, label: board.campoExtra2 }] : []),
+                ...(board?.campoExtra3 ? [{ toggle: 'copiarExtra3' as const, campo: 'valorExtra3' as const, label: board.campoExtra3 }] : []),
+              ].map(item => {
+                const marcado = copiaConfig[item.toggle];
+                return (
+                  <div key={item.toggle} style={{
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    borderRadius: '8px', padding: '12px 14px'
+                  }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginBottom: marcado ? '10px' : 0 }}>
+                      <input
+                        type="checkbox"
+                        checked={marcado}
+                        onChange={(e) => setCopiaConfig({ ...copiaConfig, [item.toggle]: e.target.checked })}
+                        style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                      />
+                      <span style={{ color: 'white', fontSize: '13px', fontWeight: 600 }}>{item.label}</span>
+                    </label>
+                    {marcado && (
+                      <input
+                        value={copiaConfig[item.campo]}
+                        onChange={(e) => setCopiaConfig({ ...copiaConfig, [item.campo]: e.target.value })}
+                        placeholder={`Valor de ${item.label}`}
+                        style={{
+                          width: '100%', padding: '8px 10px',
+                          background: 'rgba(255,255,255,0.08)',
+                          border: '1px solid rgba(255,255,255,0.15)',
+                          borderRadius: '6px', color: 'white',
+                          fontSize: '13px', outline: 'none', boxSizing: 'border-box'
+                        }}
+                      />
                     )}
                   </div>
-                </label>
-              ))}
+                );
+              })}
             </div>
 
             <div style={{ display: 'flex', gap: '10px' }}>

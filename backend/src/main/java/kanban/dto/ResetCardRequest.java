@@ -5,5 +5,10 @@ public record ResetCardRequest(
     boolean copiarDescricao,
     boolean copiarExtra1,
     boolean copiarExtra2,
-    boolean copiarExtra3
+    boolean copiarExtra3,
+    String titulo,
+    String descricao,
+    String valorExtra1,
+    String valorExtra2,
+    String valorExtra3
 ) {}
