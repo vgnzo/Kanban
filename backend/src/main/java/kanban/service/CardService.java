@@ -14,8 +14,11 @@ import kanban.repository.ColunaRepository;
 import kanban.repository.EquipamentoRepository;
 import kanban.repository.HistoricoCardRepository;
 import kanban.repository.UsuarioRepository;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
 import kanban.dto.CardUpdateRequest;
 import kanban.dto.CardGenericoRequest;
 import java.time.LocalDateTime;
@@ -26,6 +29,7 @@ import java.util.UUID;
 @Service
 public class CardService {
 
+    
     private final CardRepository cardRepository;
     private final ColunaRepository colunaRepository;
     private final EquipamentoRepository equipamentoRepository;
@@ -157,6 +161,18 @@ public CardResponse arquivar(UUID cardId, String emailUsuario) {
 
     registrarHistorico(salvo, card.getColuna(), card.getColuna(), emailUsuario, "Card arquivado");
 
+    return toResponse(salvo);
+}
+
+    @Transactional
+public CardResponse desarquivar(UUID cardId, String emailUsuario) {
+    Card card = cardRepository.findById(cardId)
+            .orElseThrow(() -> new RuntimeException("Card não encontrado"));
+
+    card.setArquivadoEm(null);   // 👈 null, pra DESarquivar
+
+    Card salvo = cardRepository.save(card);
+    registrarHistorico(salvo, card.getColuna(), card.getColuna(), emailUsuario, "Card desarquivado");
     return toResponse(salvo);
 }
 

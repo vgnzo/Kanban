@@ -1,5 +1,6 @@
 package kanban.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
@@ -10,10 +11,9 @@ import java.util.UUID;
 @Table(name = "usuarios")
 public class Usuario {
 
-    @Id 
+    @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
-
 
     @Column(nullable = false, length = 100)
     private String nome;
@@ -21,7 +21,7 @@ public class Usuario {
     @Column(nullable = false, unique = true, length = 150)
     private String email;
 
-
+    @JsonIgnore
     @Column(name = "senha_hash", nullable = false)
     private String senhaHash;
 

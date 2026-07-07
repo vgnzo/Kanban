@@ -17,6 +17,10 @@ public class Board {
     private UUID id;
 
 
+    @ManyToOne
+    @JoinColumn(name= "dono_id")
+    private Usuario dono;
+
     @Column(nullable = false, length  = 120)
     private String nome;
 

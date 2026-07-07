@@ -2,6 +2,7 @@ package kanban.service;
 
 import kanban.dto.UsuarioRequest;
 import kanban.dto.UsuarioResponse;
+import kanban.dto.UsuarioSimplesResponse;
 import kanban.entity.Usuario;
 import kanban.repository.UsuarioRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -35,6 +36,12 @@ public class UsuarioService {
 
         return toResponse(usuarioRepository.save(usuario));
     }
+
+    public List<UsuarioSimplesResponse> listarSimples() {
+    return usuarioRepository.findAll().stream()
+            .map(u -> new UsuarioSimplesResponse(u.getId(), u.getNome()))
+            .toList();
+}
 
     public UsuarioResponse promoverAdmin(UUID id) {
         Usuario usuario = usuarioRepository.findById(id)

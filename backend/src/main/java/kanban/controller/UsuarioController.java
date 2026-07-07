@@ -2,6 +2,7 @@ package kanban.controller;
 
 import kanban.dto.UsuarioRequest;
 import kanban.dto.UsuarioResponse;
+import kanban.dto.UsuarioSimplesResponse;
 import kanban.entity.Usuario;
 import kanban.service.UsuarioService;
 import jakarta.validation.Valid;
@@ -40,6 +41,10 @@ public record AlterarPerfilRequest(Usuario.Perfil perfil) {}
         return ResponseEntity.ok(usuarioService.criar(request));
     }
 
+        @GetMapping("/lista-simples")
+public ResponseEntity<List<UsuarioSimplesResponse>> listarSimples() {
+    return ResponseEntity.ok(usuarioService.listarSimples());
+}
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
