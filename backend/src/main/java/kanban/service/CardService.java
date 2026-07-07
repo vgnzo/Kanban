@@ -372,4 +372,18 @@ public CardResponse editarGenerico(UUID cardId, CardGenericoUpdateRequest reques
         return toResponse(salvo);
     }
 
+    @Transactional
+    public void deletarCard(UUID cardId) {
+        Card card = cardRepository.findById(cardId)
+                .orElseThrow(() -> new RuntimeException("Card não encontrado"));
+
+        // apaga o histórico do card primeiro (senão a FK impede apagar o card)
+        historicoCardRepository.deleteAll(
+            historicoCardRepository.findByCardIdOrderByCriadoEmAsc(cardId)
+        );
+
+        // apaga o card
+        cardRepository.delete(card);
+    }
+
 }

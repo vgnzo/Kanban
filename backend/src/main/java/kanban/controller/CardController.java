@@ -40,6 +40,17 @@ public class CardController {
         return ResponseEntity.ok(cardService.listarPorColuna(colunaId));
     }
 
+    @DeleteMapping("/{cardId}")
+    public ResponseEntity<Void> deletar(
+            @PathVariable UUID cardId,
+            @AuthenticationPrincipal String email) {
+        if (!acessoService.podeEditarPeloCard(email, cardId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Sem permissão para editar este quadro");
+        }
+        cardService.deletarCard(cardId);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping
     public ResponseEntity<CardResponse> criar(
         @RequestBody @Valid CardRequest request,
