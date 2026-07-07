@@ -280,6 +280,19 @@ export default function KanbanGenerico() {
     }
   };
 
+  const deletarCard = async (cardId: string) => {
+    if (!podeEditar) return;
+    const confirmado = window.confirm('Excluir este card permanentemente?\n\nEsta ação não pode ser desfeita.');
+    if (!confirmado) return;
+    try {
+      await api.delete(`/api/cards/${cardId}`);
+      await carregarTudo();
+      fecharCard();
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Não foi possível excluir o card.');
+    }
+  };
+
   const moverCard = async (cardId: string, novaColunaId: string) => {
     if (!podeEditar) return;
     await api.patch(`/api/cards/${cardId}/mover/${novaColunaId}`);
@@ -807,7 +820,7 @@ export default function KanbanGenerico() {
                   ))}
                 </div>
 
-                {podeEditar && (
+               {podeEditar && (
                   <div style={{ marginBottom: '20px' }}>
                     <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
                       Mover para
@@ -851,6 +864,18 @@ export default function KanbanGenerico() {
                       }}
                     >
                       🔄 Gerar cópia
+                    </button>
+                    <button
+                      onClick={() => deletarCard(cardSelecionado.id)}
+                      style={{
+                        width: '100%', marginTop: '10px', padding: '10px',
+                        background: 'rgba(226,75,74,0.15)',
+                        border: '1px solid rgba(226,75,74,0.4)',
+                        borderRadius: '8px', color: '#ff7875',
+                        cursor: 'pointer', fontSize: '13px', fontWeight: 600
+                      }}
+                    >
+                      🗑 Excluir card
                     </button>
                   </div>
                 )}

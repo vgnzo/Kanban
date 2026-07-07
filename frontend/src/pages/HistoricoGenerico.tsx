@@ -57,6 +57,8 @@ setNivelAcesso(resBoard.data?.nivelAcesso || null);
     }
   };
 
+  
+
   // campos extras que o board nomeou (cruza nome do board + valor do card)
   const campos = [
     { nome: board?.campoExtra1, chave: 'valorExtra1' as const },
@@ -94,6 +96,19 @@ setNivelAcesso(resBoard.data?.nivelAcesso || null);
       alert('Não foi possível desarquivar a tarefa.');
     } finally {
       setDesarquivando(false);
+    }
+  };
+
+  const deletar = async () => {
+    if (!selecionado || !podeEditar) return;
+    const confirmado = window.confirm('Excluir esta tarefa permanentemente?\n\nEsta ação não pode ser desfeita.');
+    if (!confirmado) return;
+    try {
+      await api.delete(`/api/cards/${selecionado.id}`);
+      fechar();
+      await carregar();
+    } catch {
+      alert('Não foi possível excluir a tarefa.');
     }
   };
 
@@ -209,15 +224,27 @@ setNivelAcesso(resBoard.data?.nivelAcesso || null);
               </div>
             )}
 
-            {/* botão desarquivar — só pra quem tem EDITAR */}
+           {/* botões desarquivar / excluir — só pra quem tem EDITAR */}
             {podeEditar && (
               <div style={{ marginBottom: '20px' }}>
                 <Button variant="primary" disabled={desarquivando} onClick={desarquivar} style={{ width: '100%' }}>
                   {desarquivando ? 'Desarquivando...' : '↩ Desarquivar tarefa'}
                 </Button>
-                <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', margin: '8px 0 0', textAlign: 'center' }}>
+                <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', margin: '8px 0 12px', textAlign: 'center' }}>
                   A tarefa volta para o quadro, na coluna onde estava.
                 </p>
+                <button
+                  onClick={deletar}
+                  style={{
+                    width: '100%', padding: '11px',
+                    background: 'rgba(226,75,74,0.15)',
+                    border: '1px solid rgba(226,75,74,0.4)',
+                    borderRadius: '8px', color: '#ff7875',
+                    cursor: 'pointer', fontSize: '13px', fontWeight: 600
+                  }}
+                >
+                  🗑 Excluir permanentemente
+                </button>
               </div>
             )}
 
