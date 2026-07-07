@@ -1,0 +1,9 @@
+{
+  "java.project.sourcePaths": [
+    "backend/src/main/java",
+    "backend/src/test/java"]
+
+
+}
+
+

@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"java.project.sourcePaths": [
+			"backend/src/main/java/kanban/dto"
+		]
+	}
+}

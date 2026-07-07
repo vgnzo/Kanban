@@ -67,6 +67,15 @@ export default function KanbanGenerico() {
   const [cardArrastado, setCardArrastado] = useState<Card | null>(null);
   const [mostrarFormColuna, setMostrarFormColuna] = useState(false);
   const [editandoColuna, setEditandoColuna] = useState<string | null>(null);
+  const [mostrarReset, setMostrarReset] = useState(false);
+  const [gerandoCopia, setGerandoCopia] = useState(false);
+  const [togglesCopia, setTogglesCopia] = useState({
+    copiarTitulo: true,
+    copiarDescricao: true,
+    copiarExtra1: true,
+    copiarExtra2: true,
+    copiarExtra3: true,
+  });
   const [nomeEditColuna, setNomeEditColuna] = useState('');
   const [nomeNovaColuna, setNomeNovaColuna] = useState('');
   const [corNovaColuna, setCorNovaColuna] = useState('#378ADD');
@@ -303,6 +312,21 @@ const resUsuarios = await api.get('/api/usuarios/lista-simples');      setUsuari
     }
   };
 
+  const gerarCopia = async () => {
+    if (!cardSelecionado) return;
+    setGerandoCopia(true);
+    try {
+      await api.post(`/api/cards/${cardSelecionado.id}/resetar`, togglesCopia);
+      await carregarTudo();
+      setMostrarReset(false);
+      fecharCard();
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Não foi possível gerar a cópia.');
+    } finally {
+      setGerandoCopia(false);
+    }
+  };
+
   const cardsDaColuna = (colunaId: string) =>
     aplicarFiltros(cards.filter((c) => c.colunaId === colunaId));
 
@@ -382,7 +406,7 @@ const resUsuarios = await api.get('/api/usuarios/lista-simples');      setUsuari
           {podeEditar && (
             <Button variant="primary" onClick={() => navigate(`/criar-card-generico/${boardId}`)}>+ Novo card</Button>
           )}
-        {souDono && (
+          {souDono && (
             <Button variant="secondary" onClick={() => navigate(`/solicitacoes/${boardId}`)}>Solicitações</Button>
           )}
           <Button variant="secondary" onClick={() => navigate(`/historico-generico/${boardId}`)}>Histórico</Button>
@@ -448,21 +472,20 @@ const resUsuarios = await api.get('/api/usuarios/lista-simples');      setUsuari
       </div>
 
       <DndContext sensors={sensors} onDragStart={aoComecarArraste} onDragEnd={aoSoltar}>
-      <div
-        onWheel={(e) => {
-          // só converte vertical→horizontal se não for um scroll horizontal nativo (trackpad)
-          if (e.deltaY !== 0) {
-            e.currentTarget.scrollLeft += e.deltaY;
-          }
-        }}
-        style={{
-          display: 'flex',
-          flex: 1,
-          overflowX: 'auto',
-          overflowY: 'hidden',
-          padding: '16px',
-          gap: '0',
-        }}>
+        <div
+          onWheel={(e) => {
+            if (e.deltaY !== 0) {
+              e.currentTarget.scrollLeft += e.deltaY;
+            }
+          }}
+          style={{
+            display: 'flex',
+            flex: 1,
+            overflowX: 'auto',
+            overflowY: 'hidden',
+            padding: '16px',
+            gap: '0',
+          }}>
           {colunasVisiveis.map((coluna, index) => (
             <div key={coluna.id} style={{ display: 'flex', flexShrink: 0 }}>
               <div style={{
@@ -503,16 +526,11 @@ const resUsuarios = await api.get('/api/usuarios/lista-simples');      setUsuari
                         if (e.key === 'Escape') setEditandoColuna(null);
                       }}
                       style={{
-                        flex: 1,
-                        minWidth: 0,
-                        padding: '2px 6px',
+                        flex: 1, minWidth: 0, padding: '2px 6px',
                         background: 'rgba(255,255,255,0.1)',
                         border: '1px solid rgba(255,255,255,0.25)',
-                        borderRadius: '4px',
-                        color: 'white',
-                        fontSize: '12px',
-                        fontWeight: 600,
-                        outline: 'none'
+                        borderRadius: '4px', color: 'white',
+                        fontSize: '12px', fontWeight: 600, outline: 'none'
                       }}
                     />
                   ) : (
@@ -525,31 +543,22 @@ const resUsuarios = await api.get('/api/usuarios/lista-simples');      setUsuari
                       onClick={() => { setEditandoColuna(coluna.id); setNomeEditColuna(coluna.nome); }}
                       title="Renomear coluna"
                       style={{
-                        background: 'none',
-                        border: 'none',
-                        color: 'rgba(170, 170, 170, 0.4)',
-                        cursor: 'pointer',
-                        fontSize: '11px',
-                        padding: '2px',
-                        flexShrink: 0
+                        background: 'none', border: 'none',
+                        color: 'rgba(170, 170, 170, 0.4)', cursor: 'pointer',
+                        fontSize: '11px', padding: '2px', flexShrink: 0
                       }}
                     >
                       ✏️
                     </button>
                   )}
-
                   {podeEditar && editandoColuna !== coluna.id && (
                     <button
                       onClick={() => removerColuna(coluna.id, coluna.nome)}
                       title="Remover coluna"
                       style={{
-                        background: 'none',
-                        border: 'none',
-                        color: 'rgba(251, 33, 29, 0.6)',
-                        cursor: 'pointer',
-                        fontSize: '20px',
-                        padding: '2px',
-                        flexShrink: 0
+                        background: 'none', border: 'none',
+                        color: 'rgba(251, 33, 29, 0.6)', cursor: 'pointer',
+                        fontSize: '20px', padding: '2px', flexShrink: 0
                       }}
                     >
                       🗑
@@ -558,10 +567,8 @@ const resUsuarios = await api.get('/api/usuarios/lista-simples');      setUsuari
                   <span style={{
                     background: 'rgba(255,255,255,0.1)',
                     color: 'rgba(255,255,255,0.6)',
-                    fontSize: '11px',
-                    padding: '1px 7px',
-                    borderRadius: '20px',
-                    flexShrink: 0
+                    fontSize: '11px', padding: '1px 7px',
+                    borderRadius: '20px', flexShrink: 0
                   }}>{cardsDaColuna(coluna.id).length}</span>
                 </div>
 
@@ -572,9 +579,7 @@ const resUsuarios = await api.get('/api/usuarios/lista-simples');      setUsuari
                         background: 'rgba(255,255,255,0.06)',
                         border: '1px solid rgba(255,255,255,0.09)',
                         borderLeft: `3px solid ${coluna.cor}`,
-                        borderRadius: '8px',
-                        padding: '10px 12px',
-                        cursor: 'pointer'
+                        borderRadius: '8px', padding: '10px 12px', cursor: 'pointer'
                       }}>
                         <div style={{ color: 'white', fontWeight: 700, fontSize: '13px', marginBottom: '6px' }}>
                           {card.titulo}
@@ -591,8 +596,7 @@ const resUsuarios = await api.get('/api/usuarios/lista-simples');      setUsuari
                         })}
                         {card.responsavelNome && (
                           <div style={{
-                            marginTop: '6px',
-                            fontSize: '10px',
+                            marginTop: '6px', fontSize: '10px',
                             color: 'rgba(255,255,255,0.5)',
                             display: 'flex', alignItems: 'center', gap: '4px'
                           }}>
@@ -604,32 +608,25 @@ const resUsuarios = await api.get('/api/usuarios/lista-simples');      setUsuari
                   ))}
                 </ColunaDroppavel>
               </div>
-
               {index < colunasVisiveis.length - 1 && (
                 <div style={{
-                  width: '1px',
-                  background: 'rgba(255,255,255,0.07)',
-                  margin: '0 8px',
-                  alignSelf: 'stretch'
+                  width: '1px', background: 'rgba(255,255,255,0.07)',
+                  margin: '0 8px', alignSelf: 'stretch'
                 }} />
               )}
             </div>
           ))}
-            {podeEditar && (
+          {podeEditar && (
             <div style={{ flexShrink: 0, width: '220px', padding: '0 8px', alignSelf: 'flex-start' }}>
               {!mostrarFormColuna ? (
                 <button
                   onClick={() => setMostrarFormColuna(true)}
                   style={{
-                    width: '100%',
-                    padding: '12px',
+                    width: '100%', padding: '12px',
                     background: 'rgba(255,255,255,0.04)',
                     border: '1px dashed rgba(255,255,255,0.2)',
-                    borderRadius: '12px',
-                    color: 'rgba(255,255,255,0.6)',
-                    cursor: 'pointer',
-                    fontSize: '13px',
-                    fontWeight: 600
+                    borderRadius: '12px', color: 'rgba(255,255,255,0.6)',
+                    cursor: 'pointer', fontSize: '13px', fontWeight: 600
                   }}
                 >
                   + Adicionar coluna
@@ -638,11 +635,8 @@ const resUsuarios = await api.get('/api/usuarios/lista-simples');      setUsuari
                 <div style={{
                   background: 'rgba(255,255,255,0.05)',
                   border: '1px solid rgba(255,255,255,0.12)',
-                  borderRadius: '12px',
-                  padding: '12px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '8px'
+                  borderRadius: '12px', padding: '12px',
+                  display: 'flex', flexDirection: 'column', gap: '8px'
                 }}>
                   <input
                     autoFocus
@@ -650,13 +644,9 @@ const resUsuarios = await api.get('/api/usuarios/lista-simples');      setUsuari
                     onChange={(e) => setNomeNovaColuna(e.target.value)}
                     placeholder="Nome da coluna"
                     style={{
-                      padding: '8px 10px',
-                      background: 'rgba(255,255,255,0.08)',
-                      border: '1px solid rgba(255,255,255,0.15)',
-                      borderRadius: '6px',
-                      color: 'white',
-                      fontSize: '13px',
-                      outline: 'none'
+                      padding: '8px 10px', background: 'rgba(255,255,255,0.08)',
+                      border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px',
+                      color: 'white', fontSize: '13px', outline: 'none'
                     }}
                   />
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -673,15 +663,11 @@ const resUsuarios = await api.get('/api/usuarios/lista-simples');      setUsuari
                       onClick={adicionarColuna}
                       disabled={salvandoColuna}
                       style={{
-                        flex: 1,
-                        padding: '8px',
+                        flex: 1, padding: '8px',
                         background: 'linear-gradient(135deg, #667eea, #764ba2)',
-                        border: 'none',
-                        borderRadius: '6px',
-                        color: 'white',
+                        border: 'none', borderRadius: '6px', color: 'white',
                         cursor: salvandoColuna ? 'not-allowed' : 'pointer',
-                        fontSize: '12px',
-                        fontWeight: 600
+                        fontSize: '12px', fontWeight: 600
                       }}
                     >
                       {salvandoColuna ? 'Salvando...' : 'Adicionar'}
@@ -689,13 +675,9 @@ const resUsuarios = await api.get('/api/usuarios/lista-simples');      setUsuari
                     <button
                       onClick={() => { setMostrarFormColuna(false); setNomeNovaColuna(''); }}
                       style={{
-                        padding: '8px 12px',
-                        background: 'rgba(255,255,255,0.05)',
-                        border: '1px solid rgba(255,255,255,0.15)',
-                        borderRadius: '6px',
-                        color: 'rgba(255,255,255,0.7)',
-                        cursor: 'pointer',
-                        fontSize: '12px'
+                        padding: '8px 12px', background: 'rgba(255,255,255,0.05)',
+                        border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px',
+                        color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: '12px'
                       }}
                     >
                       Cancelar
@@ -713,11 +695,8 @@ const resUsuarios = await api.get('/api/usuarios/lista-simples');      setUsuari
               background: 'rgba(40,44,72,0.95)',
               border: '1px solid rgba(255,255,255,0.2)',
               borderLeft: `3px solid ${cardArrastado.corColuna}`,
-              borderRadius: '8px',
-              padding: '10px 12px',
-              width: '230px',
-              boxShadow: '0 12px 30px rgba(0,0,0,0.5)',
-              cursor: 'grabbing',
+              borderRadius: '8px', padding: '10px 12px', width: '230px',
+              boxShadow: '0 12px 30px rgba(0,0,0,0.5)', cursor: 'grabbing',
             }}>
               <div style={{ color: 'white', fontWeight: 700, fontSize: '13px' }}>{cardArrastado.titulo}</div>
             </div>
@@ -726,12 +705,9 @@ const resUsuarios = await api.get('/api/usuarios/lista-simples');      setUsuari
       </DndContext>
 
       <footer style={{
-        textAlign: 'center',
-        padding: '6px 0',
-        color: 'rgba(255,255,255,0.25)',
-        fontSize: '11px',
-        letterSpacing: '0.3px',
-        flexShrink: 0
+        textAlign: 'center', padding: '6px 0',
+        color: 'rgba(255,255,255,0.25)', fontSize: '11px',
+        letterSpacing: '0.3px', flexShrink: 0
       }}>
         Desenvolvido por Vinicius Galdino
       </footer>
@@ -739,20 +715,14 @@ const resUsuarios = await api.get('/api/usuarios/lista-simples');      setUsuari
       {cardSelecionado && (
         <div onClick={fecharCard} style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.6)',
-          backdropFilter: 'blur(4px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 100
+          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100
         }}>
           <div onClick={(e) => e.stopPropagation()} style={{
             background: 'linear-gradient(135deg, #1a1a2e, #16213e)',
             border: '1px solid rgba(255,255,255,0.15)',
-            borderRadius: '16px',
-            padding: '28px',
-            width: '90%',
-            maxWidth: '500px',
-            maxHeight: '80vh',
-            overflowY: 'auto',
+            borderRadius: '16px', padding: '28px', width: '90%',
+            maxWidth: '500px', maxHeight: '80vh', overflowY: 'auto',
             boxShadow: '0 25px 50px rgba(0,0,0,0.5)'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
@@ -787,7 +757,6 @@ const resUsuarios = await api.get('/api/usuarios/lista-simples');      setUsuari
                   <input type="date" style={inputStyle} value={formEdit.previsaoLiberacao}
                     onChange={(e) => setFormEdit({ ...formEdit, previsaoLiberacao: e.target.value })} />
                 </div>
-                {/* campos extras nomeados pelo board */}
                 {board?.campoExtra1 && (
                   <div>
                     <label style={labelStyle}>{board.campoExtra1}</label>
@@ -846,10 +815,8 @@ const resUsuarios = await api.get('/api/usuarios/lista-simples');      setUsuari
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '14px' }}>
                       {colunas.filter(c => c.id !== cardSelecionado.colunaId).map(coluna => (
                         <button key={coluna.id} onClick={() => moverCard(cardSelecionado.id, coluna.id)} style={{
-                          padding: '6px 12px',
-                          background: 'rgba(255,255,255,0.05)',
-                          border: `1px solid ${coluna.cor}`,
-                          color: 'white', borderRadius: '8px',
+                          padding: '6px 12px', background: 'rgba(255,255,255,0.05)',
+                          border: `1px solid ${coluna.cor}`, color: 'white', borderRadius: '8px',
                           cursor: 'pointer', fontSize: '12px',
                           display: 'flex', alignItems: 'center', gap: '6px'
                         }}>
@@ -864,6 +831,18 @@ const resUsuarios = await api.get('/api/usuarios/lista-simples');      setUsuari
                         {arquivando ? 'Arquivando...' : 'Arquivar'}
                       </Button>
                     </div>
+                    <button
+                      onClick={() => setMostrarReset(true)}
+                      style={{
+                        width: '100%', marginTop: '10px', padding: '10px',
+                        background: 'rgba(29,158,117,0.15)',
+                        border: '1px solid rgba(29,158,117,0.4)',
+                        borderRadius: '8px', color: '#4fd1a5',
+                        cursor: 'pointer', fontSize: '13px', fontWeight: 600
+                      }}
+                    >
+                      🔄 Gerar cópia
+                    </button>
                   </div>
                 )}
 
@@ -879,6 +858,71 @@ const resUsuarios = await api.get('/api/usuarios/lista-simples');      setUsuari
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {mostrarReset && cardSelecionado && (
+        <div onClick={() => setMostrarReset(false)} style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200
+        }}>
+          <div onClick={(e) => e.stopPropagation()} style={{
+            background: 'linear-gradient(135deg, #1a1a2e, #16213e)',
+            border: '1px solid rgba(255,255,255,0.15)',
+            borderRadius: '16px', padding: '28px', width: '90%', maxWidth: '420px'
+          }}>
+            <h3 style={{ color: 'white', margin: '0 0 6px' }}>Gerar cópia do card</h3>
+            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', margin: '0 0 20px' }}>
+              A cópia começa na primeira coluna, com histórico limpo. Escolha o que copiar:
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
+              {[
+                { chave: 'copiarTitulo' as const, label: 'Título', valor: cardSelecionado.titulo },
+                { chave: 'copiarDescricao' as const, label: 'Descrição', valor: cardSelecionado.descricao },
+                ...(board?.campoExtra1 ? [{ chave: 'copiarExtra1' as const, label: board.campoExtra1, valor: cardSelecionado.valorExtra1 }] : []),
+                ...(board?.campoExtra2 ? [{ chave: 'copiarExtra2' as const, label: board.campoExtra2, valor: cardSelecionado.valorExtra2 }] : []),
+                ...(board?.campoExtra3 ? [{ chave: 'copiarExtra3' as const, label: board.campoExtra3, valor: cardSelecionado.valorExtra3 }] : []),
+              ].map(item => (
+                <label key={item.chave} style={{
+                  display: 'flex', alignItems: 'center', gap: '10px',
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: '8px', padding: '10px 14px', cursor: 'pointer'
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={togglesCopia[item.chave]}
+                    onChange={(e) => setTogglesCopia({ ...togglesCopia, [item.chave]: e.target.checked })}
+                    style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ color: 'white', fontSize: '13px', fontWeight: 500 }}>{item.label}</div>
+                    {item.valor && (
+                      <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {item.valor}
+                      </div>
+                    )}
+                  </div>
+                </label>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button onClick={() => setMostrarReset(false)} style={{
+                flex: 1, padding: '11px', background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px',
+                color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: '14px'
+              }}>Cancelar</button>
+              <button onClick={gerarCopia} disabled={gerandoCopia} style={{
+                flex: 2, padding: '11px',
+                background: gerandoCopia ? 'rgba(29,158,117,0.5)' : 'linear-gradient(135deg, #1D9E75, #17805e)',
+                border: 'none', borderRadius: '8px', color: 'white',
+                cursor: gerandoCopia ? 'not-allowed' : 'pointer', fontSize: '14px', fontWeight: 600
+              }}>{gerandoCopia ? 'Gerando...' : 'Gerar cópia'}</button>
+            </div>
           </div>
         </div>
       )}

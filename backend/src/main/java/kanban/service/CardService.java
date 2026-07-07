@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import kanban.dto.CardUpdateRequest;
+import kanban.dto.ResetCardRequest;
 import kanban.dto.CardGenericoRequest;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -338,5 +339,36 @@ public CardResponse editarGenerico(UUID cardId, CardGenericoUpdateRequest reques
 
     return toResponse(salvo);
 }
+
+@Transactional
+    public CardResponse resetarCard(UUID cardId, ResetCardRequest request, String emailUsuario) {
+        // 1. busca o card original
+        Card original = cardRepository.findById(cardId)
+                .orElseThrow(() -> new RuntimeException("Card não encontrado"));
+
+        // 2. descobre o board pela coluna do original, e pega a primeira coluna (menor ordem)
+        UUID boardId = original.getColuna().getBoard().getId();
+        List<Coluna> colunas = colunaRepository.findByBoardIdOrderByOrdemAsc(boardId);
+        if (colunas.isEmpty()) {
+            throw new RuntimeException("O quadro não tem colunas");
+        }
+        Coluna primeiraColuna = colunas.get(0);
+
+        // 3. cria o card novo, copiando só o que os toggles pedirem
+        Card novo = new Card();
+        novo.setColuna(primeiraColuna);
+        novo.setTitulo(request.copiarTitulo() && original.getTitulo() != null
+                ? original.getTitulo() : "Novo card");
+        novo.setDescricao(request.copiarDescricao() ? original.getDescricao() : null);
+        novo.setValorExtra1(request.copiarExtra1() ? original.getValorExtra1() : null);
+        novo.setValorExtra2(request.copiarExtra2() ? original.getValorExtra2() : null);
+        novo.setValorExtra3(request.copiarExtra3() ? original.getValorExtra3() : null);
+
+        // 4. salva e registra "Card criado" (histórico limpo, só esse registro)
+        Card salvo = cardRepository.save(novo);
+        registrarHistorico(salvo, null, primeiraColuna, emailUsuario, "Card criado (cópia)");
+
+        return toResponse(salvo);
+    }
 
 }

@@ -5,6 +5,7 @@ import kanban.dto.CardGenericoUpdateRequest;
 import kanban.dto.CardRequest;
 import kanban.dto.CardResponse;
 import kanban.dto.CardUpdateRequest;
+import kanban.dto.ResetCardRequest;
 import kanban.service.CardService;
 import kanban.service.AcessoService;
 import jakarta.validation.Valid;
@@ -131,5 +132,16 @@ public ResponseEntity<CardResponse> desarquivar(
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Sem acesso a este quadro");
         }
         return ResponseEntity.ok(cardService.listarArquivadosPorBoard(boardId));
+    }
+
+    @PostMapping("/{cardId}/resetar")
+    public ResponseEntity<CardResponse> resetar(
+            @PathVariable UUID cardId,
+            @RequestBody ResetCardRequest request,
+            @AuthenticationPrincipal String email) {
+        if (!acessoService.podeEditarPeloCard(email, cardId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Sem permissão para editar este quadro");
+        }
+        return ResponseEntity.ok(cardService.resetarCard(cardId, request, email));
     }
 }
