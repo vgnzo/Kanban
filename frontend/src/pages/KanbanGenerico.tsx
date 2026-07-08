@@ -12,11 +12,10 @@ interface EditarCardProps {
 }
 
 export default function EditarCardModal({ card, onSalvar, onCancelar }: EditarCardProps) {
-  const [titulo, setTitulo] = useState(card.titulo);
-  const [descricao, setDescricao] = useState(card.descricao);
-  // Removi o 'setPrioridade' porque não estava sendo usado no seu código
-  const [prioridade] = useState(card.prioridade);
-  const [salvando, setSalvando] = useState(false);
+const [titulo, setTitulo] = useState(card.titulo);
+const [descricao, setDescricao] = useState(card.descricao);
+const [prioridade] = useState(card.prioridade); // setPrioridade removido
+const [salvando, setSalvando] = useState(false);
 
   const handleSalvar = async () => {
     setSalvando(true);
