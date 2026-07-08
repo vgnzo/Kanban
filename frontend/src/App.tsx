@@ -14,6 +14,8 @@ import GerenciarEquipamentos from './pages/GerenciarEquipamentos';
 import Historico from './pages/Historico';
 import Solicitacoes from './pages/Solicitacoes';
 import { useAuth } from './contexts/AuthContext';
+import Perfil from './pages/Perfil';
+import TrocarSenha from './pages/TrocarSenha';
 
 function RotaProtegida({ children }: { children: React.ReactNode }) {
   const { token } = useAuth();
@@ -94,6 +96,17 @@ function App() {
           <Route path="/historico" element={
             <RotaProtegida>
               <Historico />
+            </RotaProtegida>
+          } />
+
+          <Route path="/perfil" element={
+            <RotaProtegida>
+              <Perfil />
+            </RotaProtegida>
+          } />
+          <Route path="/trocar-senha" element={
+            <RotaProtegida>
+              <TrocarSenha />
             </RotaProtegida>
           } />
 

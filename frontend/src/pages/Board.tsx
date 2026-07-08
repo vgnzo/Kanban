@@ -12,6 +12,10 @@ interface Board {
   nivelAcesso: string | null;
 }
 
+// Função para buscar o avatar escolhido no DiceBear
+const urlAvatar = (seed: string) =>
+  `https://api.dicebear.com/9.x/avataaars/svg?seed=${encodeURIComponent(seed)}`;
+
 export default function Boards() {
   const { usuario, logout } = useAuth();
   const navigate = useNavigate();
@@ -115,6 +119,7 @@ export default function Boards() {
           }}>⚙️</div>
           <div style={{ color: 'white', fontWeight: 600, fontSize: '16px' }}>Meus Kanbans</div>
         </div>
+        
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div style={{ textAlign: 'right' }}>
             <div style={{ color: 'white', fontSize: '13px', fontWeight: 500 }}>{usuario?.nome}</div>
@@ -125,6 +130,25 @@ export default function Boards() {
               display: 'inline-block', marginTop: '2px'
             }}>{usuario?.perfil}</div>
           </div>
+          
+          {/* BOTÃO DE PERFIL ATUALIZADO AQUI */}
+          <button onClick={() => navigate('/perfil')} title="Meu perfil" style={{
+            width: '38px', height: '38px',
+            background: usuario?.avatar ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #667eea, #764ba2)',
+            border: '2px solid rgba(255,255,255,0.2)',
+            borderRadius: '50%',
+            color: 'white',
+            cursor: 'pointer', fontSize: '16px', fontWeight: 600,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 0, overflow: 'hidden'
+          }}>
+            {usuario?.avatar ? (
+              <img src={urlAvatar(usuario.avatar)} width="38" height="38" alt="avatar" />
+            ) : (
+              (usuario?.nome || '?').charAt(0).toUpperCase()
+            )}
+          </button>
+
           <button onClick={logout} style={{
             background: 'rgba(255,255,255,0.08)',
             border: '1px solid rgba(255,255,255,0.15)',

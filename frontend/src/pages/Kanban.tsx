@@ -57,24 +57,32 @@ interface Equipamento {
   modelo: string;
 }
 
-
+interface Board {
+  id: string;
+  nome: string;
+  tipo: string;
+  nivelAcesso: string | null;
+}
 
 export default function Kanban() {
   const { boardId } = useParams<{ boardId: string }>();
-  const { usuario, logout, isAdmin } = useAuth();
+  const { usuario, isAdmin } = useAuth();
   const navigate = useNavigate();
-  const [souDono, setSouDono] = useState(false);
   const [colunas, setColunas] = useState<Coluna[]>([]);
   const [cards, setCards] = useState<Card[]>([]);
   const [nivelAcesso, setNivelAcesso] = useState<string | null>(null);
+  const [souDono, setSouDono] = useState(false);
   const [cardSelecionado, setCardSelecionado] = useState<Card | null>(null);
   const [historico, setHistorico] = useState<Historico[]>([]);
   const [loadingHistorico, setLoadingHistorico] = useState(false);
   const [arquivando, setArquivando] = useState(false);
   const [cardArrastado, setCardArrastado] = useState<Card | null>(null);
 
+  // renomear coluna (equipamentos: só renomeia, não adiciona/remove)
+  const [editandoColuna, setEditandoColuna] = useState<string | null>(null);
+  const [nomeEditColuna, setNomeEditColuna] = useState('');
+
   // pode editar o conteúdo (cards) se tem nível EDITAR neste quadro
-  // (vale tanto pro admin dono quanto pro user com permissão de editar)
   const podeEditar = nivelAcesso === 'EDITAR';
 
   // filtros
@@ -96,7 +104,6 @@ export default function Kanban() {
     previsaoLiberacao: '',
   });
 
-  // sensor: exige mover 8px antes de começar a arrastar.
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
@@ -106,7 +113,7 @@ export default function Kanban() {
   }, [boardId]);
 
   const carregarDados = async () => {
-  const [resBoard, resColunas, resCards] = await Promise.all([
+    const [resBoard, resColunas, resCards] = await Promise.all([
       api.get(`/api/boards/${boardId}`),
       api.get(`/api/colunas/board/${boardId}`),
       api.get(`/api/cards/board/${boardId}`),
@@ -116,6 +123,17 @@ export default function Kanban() {
     setSouDono(boardAtual?.souDono || false);
     setColunas(resColunas.data);
     setCards(resCards.data);
+  };
+
+  const salvarNomeColuna = async (colunaId: string) => {
+    if (!nomeEditColuna.trim()) { setEditandoColuna(null); return; }
+    try {
+      await api.patch(`/api/colunas/${colunaId}`, { nome: nomeEditColuna.trim() });
+      setEditandoColuna(null);
+      await carregarDados();
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Não foi possível renomear a coluna.');
+    }
   };
 
   const unidadesDisponiveis = Array.from(new Set(cards.map(c => c.unidade))).sort();
@@ -208,6 +226,19 @@ export default function Kanban() {
       }
     } finally {
       setSalvandoEdicao(false);
+    }
+  };
+
+  const deletarCard = async (cardId: string) => {
+    if (!podeEditar) return;
+    const confirmado = window.confirm('Excluir este card permanentemente?\n\nEsta ação não pode ser desfeita.');
+    if (!confirmado) return;
+    try {
+      await api.delete(`/api/cards/${cardId}`);
+      await carregarDados();
+      fecharCard();
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Não foi possível excluir o card.');
     }
   };
 
@@ -350,8 +381,6 @@ export default function Kanban() {
             <Button variant="secondary" onClick={() => navigate(`/solicitacoes/${boardId}`)}>Solicitações</Button>
           )}
 
-          <Button variant="secondary" onClick={logout}>Sair</Button>
-
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', marginLeft: '4px' }}>
             <div style={{ color: 'white', fontSize: '13px', fontWeight: 500, lineHeight: 1 }}>{usuario?.nome}</div>
             <div style={{
@@ -424,9 +453,8 @@ export default function Kanban() {
       </div>
 
       <DndContext sensors={sensors} onDragStart={aoComecarArraste} onDragEnd={aoSoltar}>
-              <div
+        <div
           onWheel={(e) => {
-            // só converte vertical→horizontal se não for um scroll horizontal nativo (trackpad)
             if (e.deltaY !== 0) {
               e.currentTarget.scrollLeft += e.deltaY;
             }
@@ -468,9 +496,51 @@ export default function Kanban() {
                     display: 'inline-block',
                     flexShrink: 0
                   }} />
-                  <span style={{ color: 'white', fontSize: '12px', fontWeight: 600, flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {coluna.nome}
-                  </span>
+                  {editandoColuna === coluna.id ? (
+                    <input
+                      autoFocus
+                      value={nomeEditColuna}
+                      onChange={(e) => setNomeEditColuna(e.target.value)}
+                      onBlur={() => salvarNomeColuna(coluna.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') salvarNomeColuna(coluna.id);
+                        if (e.key === 'Escape') setEditandoColuna(null);
+                      }}
+                      style={{
+                        flex: 1,
+                        minWidth: 0,
+                        padding: '2px 6px',
+                        background: 'rgba(255,255,255,0.1)',
+                        border: '1px solid rgba(255,255,255,0.25)',
+                        borderRadius: '4px',
+                        color: 'white',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        outline: 'none'
+                      }}
+                    />
+                  ) : (
+                    <span style={{ color: 'white', fontSize: '12px', fontWeight: 600, flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {coluna.nome}
+                    </span>
+                  )}
+                  {podeEditar && editandoColuna !== coluna.id && (
+                    <button
+                      onClick={() => { setEditandoColuna(coluna.id); setNomeEditColuna(coluna.nome); }}
+                      title="Renomear coluna"
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'rgba(170, 170, 170, 0.4)',
+                        cursor: 'pointer',
+                        fontSize: '11px',
+                        padding: '2px',
+                        flexShrink: 0
+                      }}
+                    >
+                      ✏️
+                    </button>
+                  )}
                   <span style={{
                     background: 'rgba(255,255,255,0.1)',
                     color: 'rgba(255,255,255,0.6)',
@@ -687,12 +757,28 @@ export default function Kanban() {
                         </button>
                       ))}
                     </div>
-                    <div style={{ display: 'flex', gap: '10px' }}>
+                    <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
                       <Button variant="primary" onClick={iniciarEdicao} style={{ flex: 1 }}>Editar</Button>
                       <Button variant="secondary" disabled={arquivando} onClick={() => arquivarCard(cardSelecionado.id)} style={{ flex: 1 }}>
                         {arquivando ? 'Arquivando...' : 'Arquivar'}
                       </Button>
                     </div>
+                    <button
+                      onClick={() => deletarCard(cardSelecionado.id)}
+                      style={{
+                        width: '100%',
+                        padding: '10px',
+                        background: 'rgba(226,75,74,0.12)',
+                        border: '1px solid rgba(226,75,74,0.3)',
+                        borderRadius: '8px',
+                        color: '#ff7875',
+                        cursor: 'pointer',
+                        fontSize: '13px',
+                        fontWeight: 600
+                      }}
+                    >
+                      🗑 Excluir card
+                    </button>
                   </div>
                 )}
 

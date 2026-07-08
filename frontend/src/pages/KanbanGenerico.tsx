@@ -53,7 +53,7 @@ interface Usuario {
 
 export default function KanbanGenerico() {
   const { boardId } = useParams<{ boardId: string }>();
-  const { usuario, logout } = useAuth();
+  const { usuario } = useAuth();
   const navigate = useNavigate();
   const [souDono, setSouDono] = useState(false);
   const [board, setBoard] = useState<Board | null>(null);
@@ -423,7 +423,6 @@ export default function KanbanGenerico() {
             <Button variant="secondary" onClick={() => navigate(`/solicitacoes/${boardId}`)}>Solicitações</Button>
           )}
           <Button variant="secondary" onClick={() => navigate(`/historico-generico/${boardId}`)}>Histórico</Button>
-          <Button variant="secondary" onClick={logout}>Sair</Button>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', marginLeft: '4px' }}>
             <div style={{ color: 'white', fontSize: '13px', fontWeight: 500, lineHeight: 1 }}>{usuario?.nome}</div>
             <div style={{

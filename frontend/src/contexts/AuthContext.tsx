@@ -5,6 +5,7 @@ interface Usuario {
   nome: string;
   email: string;
   perfil: string;
+  avatar?: string | null;
 }
 
 interface AuthContextType {
@@ -13,14 +14,13 @@ interface AuthContextType {
   login: (token: string, usuario: Usuario) => void;
   logout: () => void;
   isAdmin: () => boolean;
+  setAvatar: (avatar: string) => void; // Nova função adicionada
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [token, setToken] = useState<string | null>(
-    localStorage.getItem('token')
-  );
+  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [usuario, setUsuario] = useState<Usuario | null>(() => {
     const salvo = localStorage.getItem('usuario');
     return salvo ? JSON.parse(salvo) : null;
@@ -33,6 +33,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('usuario', JSON.stringify(novoUsuario));
   };
 
+  const setAvatar = (novoAvatar: string) => {
+    if (!usuario) return;
+    const usuarioAtualizado = { ...usuario, avatar: novoAvatar };
+    setUsuario(usuarioAtualizado);
+    localStorage.setItem('usuario', JSON.stringify(usuarioAtualizado));
+  };
+
   const logout = () => {
     setToken(null);
     setUsuario(null);
@@ -43,7 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isAdmin = () => usuario?.perfil === 'ADMIN';
 
   return (
-    <AuthContext.Provider value={{ usuario, token, login, logout, isAdmin }}>
+    <AuthContext.Provider value={{ usuario, token, login, logout, isAdmin, setAvatar }}>
       {children}
     </AuthContext.Provider>
   );
