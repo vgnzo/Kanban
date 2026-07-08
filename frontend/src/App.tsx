@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Login from './pages/Login';
 import Cadastro from './pages/Cadastro';
 import Boards from './pages/Board';
@@ -13,7 +13,6 @@ import GerenciarUsuarios from './pages/GerenciarUsuarios';
 import GerenciarEquipamentos from './pages/GerenciarEquipamentos';
 import Historico from './pages/Historico';
 import Solicitacoes from './pages/Solicitacoes';
-import { useAuth } from './contexts/AuthContext';
 import Perfil from './pages/Perfil';
 import TrocarSenha from './pages/TrocarSenha';
 
@@ -30,14 +29,12 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/cadastro" element={<Cadastro />} />
 
-          {/* tela inicial após login: seleção de quadros */}
           <Route path="/boards" element={
             <RotaProtegida>
               <Boards />
             </RotaProtegida>
           } />
 
-          {/* criar quadro novo (só admin chega aqui pelo botão) */}
           <Route path="/criar-board" element={
             <RotaProtegida>
               <CriarBoard />
@@ -50,28 +47,24 @@ function App() {
             </RotaProtegida>
           } />
 
-          {/* kanban de equipamentos, por board */}
           <Route path="/kanban/:boardId" element={
             <RotaProtegida>
               <Kanban />
             </RotaProtegida>
           } />
 
-          {/* kanban genérico (tarefas), por board */}
           <Route path="/kanban-generico/:boardId" element={
             <RotaProtegida>
               <KanbanGenerico />
             </RotaProtegida>
           } />
 
-          {/* criar tarefa num quadro genérico */}
           <Route path="/criar-card-generico/:boardId" element={
             <RotaProtegida>
               <CriarCardGenerico />
             </RotaProtegida>
           } />
 
-          {/* histórico/arquivados de um quadro genérico */}
           <Route path="/historico-generico/:boardId" element={
             <RotaProtegida>
               <HistoricoGenerico />
@@ -83,16 +76,19 @@ function App() {
               <CriarCard />
             </RotaProtegida>
           } />
+
           <Route path="/usuarios" element={
             <RotaProtegida>
               <GerenciarUsuarios />
             </RotaProtegida>
           } />
+
           <Route path="/equipamentos" element={
             <RotaProtegida>
               <GerenciarEquipamentos />
             </RotaProtegida>
           } />
+
           <Route path="/historico" element={
             <RotaProtegida>
               <Historico />
@@ -104,13 +100,13 @@ function App() {
               <Perfil />
             </RotaProtegida>
           } />
+
           <Route path="/trocar-senha" element={
             <RotaProtegida>
               <TrocarSenha />
             </RotaProtegida>
           } />
 
-          {/* qualquer rota desconhecida vai pro login */}
           <Route path="*" element={<Navigate to="/login" />} />
         </Routes>
       </BrowserRouter>
