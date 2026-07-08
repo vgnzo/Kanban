@@ -57,12 +57,12 @@ interface Equipamento {
   modelo: string;
 }
 
-interface Board {
-  id: string;
-  nome: string;
-  tipo: string;
-  nivelAcesso: string | null;
-}
+// interface Boards {
+//   id: string;
+//   nome: string;
+//   tipo: string;
+//   nivelAcesso: string | null;
+// }
 
 export default function Kanban() {
   const { boardId } = useParams<{ boardId: string }>();
