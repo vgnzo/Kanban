@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import Button from '../components/Button';
 import Timeline from '../components/Timeline';
+import EditarCardModal from '../components/EditarCardModal';
 import { CardArrastavel, ColunaDroppavel } from '../components/DragDrop';
 import {
   DndContext,
@@ -14,6 +15,10 @@ import {
 } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 
+// 🟢 1. DECLARAÇÃO DO TIPO QUE FALTAVA (Obrigatório vir no topo)
+export type Prioridade = 'BAIXO' | 'MEDIO' | 'ALTO';
+
+// 🟢 2. INTERFACES
 interface Coluna {
   id: string;
   nome: string;
@@ -25,6 +30,7 @@ interface Card {
   id: string;
   titulo: string;
   descricao: string;
+  prioridade?: Prioridade;
   colunaId: string;
   colunaNome: string;
   corColuna: string;
@@ -50,6 +56,20 @@ interface Usuario {
   id: string;
   nome: string;
 }
+
+// 🟢 3. DICIONÁRIOS DE PESO E COR
+const PESO_PRIORIDADE: Record<Prioridade, number> = {
+  ALTO: 3,
+  MEDIO: 2,
+  BAIXO: 1,
+};
+
+const CORES_PRIORIDADE: Record<Prioridade, { bg: string; border: string; text: string; label: string }> = {
+  ALTO: { bg: 'rgba(239, 68, 68, 0.2)', border: 'rgba(239, 68, 68, 0.5)', text: '#f87171', label: '🔴 Alta' },
+  MEDIO: { bg: 'rgba(245, 158, 11, 0.2)', border: 'rgba(245, 158, 11, 0.5)', text: '#fbbf24', label: '🟡 Média' },
+  BAIXO: { bg: 'rgba(16, 185, 129, 0.2)', border: 'rgba(16, 185, 129, 0.5)', text: '#34d399', label: '🟢 Baixa' },
+};
+
 
 export default function KanbanGenerico() {
   const { boardId } = useParams<{ boardId: string }>();
@@ -99,6 +119,7 @@ export default function KanbanGenerico() {
     titulo: '',
     descricao: '',
     responsavelId: '',
+    prioridade: 'MEDIO' as Prioridade,
     previsaoLiberacao: '',
     valorExtra1: '',
     valorExtra2: '',
@@ -182,8 +203,7 @@ export default function KanbanGenerico() {
       setGerandoCopia(false);
     }
   };
-
-  // nomes dos campos extras (vêm do board); se não tiver nome, o campo não é usado
+// nomes dos campos extras (vêm do board); se não tiver nome, o campo não é usado
   const campos = [
     { nome: board?.campoExtra1, chave: 'valorExtra1' as const },
     { nome: board?.campoExtra2, chave: 'valorExtra2' as const },
@@ -202,6 +222,18 @@ export default function KanbanGenerico() {
         (c.descricao || '').toLowerCase().includes(texto);
       const casaResponsavel = !filtroResponsavel || c.responsavelNome === filtroResponsavel;
       return casaTexto && casaResponsavel;
+    });
+  };
+
+  // 🟢 Apenas UMA declaração do cardsDaColuna aqui
+  const cardsDaColuna = (colunaId: string) => {
+    const filtrados = aplicarFiltros(cards.filter((c) => c.colunaId === colunaId));
+    
+    // Ordena os cards da coluna por prioridade (ALTO -> MEDIO -> BAIXO)
+    return [...filtrados].sort((a, b) => {
+      const pesoA = PESO_PRIORIDADE[a.prioridade || 'BAIXO'];
+      const pesoB = PESO_PRIORIDADE[b.prioridade || 'BAIXO'];
+      return pesoB - pesoA;
     });
   };
 
@@ -239,6 +271,7 @@ export default function KanbanGenerico() {
     setFormEdit({
       titulo: cardSelecionado.titulo || '',
       descricao: cardSelecionado.descricao || '',
+      prioridade: cardSelecionado.prioridade || 'MEDIO',
       responsavelId: cardSelecionado.responsavelId || '',
       previsaoLiberacao: cardSelecionado.previsaoLiberacao || '',
       valorExtra1: cardSelecionado.valorExtra1 || '',
@@ -261,6 +294,7 @@ export default function KanbanGenerico() {
       await api.put(`/api/cards/generico/${cardSelecionado.id}`, {
         titulo: formEdit.titulo,
         descricao: formEdit.descricao || null,
+        prioridade: formEdit.prioridade,
         responsavelId: formEdit.responsavelId || null,
         previsaoLiberacao: formEdit.previsaoLiberacao || null,
         valorExtra1: formEdit.valorExtra1 || null,
@@ -340,9 +374,6 @@ export default function KanbanGenerico() {
       setArquivando(false);
     }
   };
-
-  const cardsDaColuna = (colunaId: string) =>
-    aplicarFiltros(cards.filter((c) => c.colunaId === colunaId));
 
   const colunasVisiveis = (() => {
     if (filtroColuna) {
@@ -588,14 +619,33 @@ export default function KanbanGenerico() {
                   {cardsDaColuna(coluna.id).map((card) => (
                     <CardArrastavel key={card.id} id={card.id} podeArrastar={podeEditar}>
                       <div onClick={() => abrirCard(card)} style={{
-                        background: 'rgba(255,255,255,0.06)',
-                        border: '1px solid rgba(255,255,255,0.09)',
-                        borderLeft: `3px solid ${coluna.cor}`,
-                        borderRadius: '8px', padding: '10px 12px', cursor: 'pointer'
-                      }}>
-                        <div style={{ color: 'white', fontWeight: 700, fontSize: '13px', marginBottom: '6px' }}>
-                          {card.titulo}
-                        </div>
+                            background: 'rgba(255,255,255,0.06)',
+                            border: '1px solid rgba(255,255,255,0.09)',
+                            borderLeft: `3px solid ${coluna.cor}`,
+                            borderRadius: '8px', padding: '10px 12px', cursor: 'pointer'
+                          }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px', gap: '8px' }}>
+                              <div style={{ color: 'white', fontWeight: 700, fontSize: '13px' }}>
+                                {card.titulo}
+                              </div>
+
+                              {/* 🟢 Badge da Prioridade */}
+                              {card.prioridade && CORES_PRIORIDADE[card.prioridade] && (
+                                <span style={{
+                                  fontSize: '10px',
+                                  padding: '2px 6px',
+                                  borderRadius: '4px',
+                                  fontWeight: 600,
+                                  background: CORES_PRIORIDADE[card.prioridade].bg,
+                                  border: `1px solid ${CORES_PRIORIDADE[card.prioridade].border}`,
+                                  color: CORES_PRIORIDADE[card.prioridade].text,
+                                  whiteSpace: 'nowrap',
+                                  flexShrink: 0
+                                }}>
+                                  {CORES_PRIORIDADE[card.prioridade].label}
+                                </span>
+                              )}
+                            </div>
                         {campos.map(campo => {
                           const valor = valorCampo(card, campo.chave);
                           if (!valor) return null;
@@ -724,176 +774,234 @@ export default function KanbanGenerico() {
         Desenvolvido por Vinicius Galdino
       </footer>
 
-      {cardSelecionado && (
-        <div onClick={fecharCard} style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100
-        }}>
-          <div onClick={(e) => e.stopPropagation()} style={{
-            background: 'linear-gradient(135deg, #1a1a2e, #16213e)',
-            border: '1px solid rgba(255,255,255,0.15)',
-            borderRadius: '16px', padding: '28px', width: '90%',
-            maxWidth: '500px', maxHeight: '80vh', overflowY: 'auto',
-            boxShadow: '0 25px 50px rgba(0,0,0,0.5)'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
-              <h3 style={{ color: 'white', margin: 0, fontSize: '18px' }}>{cardSelecionado.titulo}</h3>
-              <Button variant="icon" onClick={fecharCard}>×</Button>
+    {cardSelecionado && (
+  <div onClick={fecharCard} style={{
+    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+    background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100
+  }}>
+    <div onClick={(e) => e.stopPropagation()} style={{
+      background: 'linear-gradient(135deg, #1a1a2e, #16213e)',
+      border: '1px solid rgba(255,255,255,0.15)',
+      borderRadius: '16px', padding: '28px', width: '90%',
+      maxWidth: '500px', maxHeight: '80vh', overflowY: 'auto',
+      boxShadow: '0 25px 50px rgba(0,0,0,0.5)'
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+        <h3 style={{ color: 'white', margin: 0, fontSize: '18px' }}>
+          {editando ? 'Editar Tarefa' : cardSelecionado.titulo}
+        </h3>
+        <Button variant="icon" onClick={fecharCard}>×</Button>
+      </div>
+
+      {editando ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '20px' }}>
+          <div>
+            <label style={labelStyle}>Título *</label>
+            <input 
+              style={inputStyle} 
+              value={formEdit.titulo}
+              onChange={(e) => setFormEdit({ ...formEdit, titulo: e.target.value })} 
+            />
+          </div>
+
+          {/* 🟢 Select de Prioridade no Formulário de Edição */}
+          <div>
+            <label style={labelStyle}>Prioridade</label>
+            <select 
+              style={{ ...inputStyle, cursor: 'pointer' }} 
+              value={formEdit.prioridade}
+              onChange={(e) => setFormEdit({ ...formEdit, prioridade: e.target.value as Prioridade })}
+            >
+              <option value="BAIXO" style={{ background: '#1a1a2e' }}>🟢 Baixa</option>
+              <option value="MEDIO" style={{ background: '#1a1a2e' }}>🟡 Média</option>
+              <option value="ALTO" style={{ background: '#1a1a2e' }}>🔴 Alta</option>
+            </select>
+          </div>
+
+          <div>
+            <label style={labelStyle}>Descrição</label>
+            <textarea 
+              style={{ ...inputStyle, resize: 'vertical' }} 
+              rows={3} 
+              value={formEdit.descricao}
+              onChange={(e) => setFormEdit({ ...formEdit, descricao: e.target.value })} 
+            />
+          </div>
+
+          <div>
+            <label style={labelStyle}>Responsável</label>
+            <select 
+              style={{ ...inputStyle, cursor: 'pointer' }} 
+              value={formEdit.responsavelId}
+              onChange={(e) => setFormEdit({ ...formEdit, responsavelId: e.target.value })}
+            >
+              <option value="" style={{ background: '#1a1a2e' }}>Ninguém</option>
+              {usuarios.map(u => (
+                <option key={u.id} value={u.id} style={{ background: '#1a1a2e' }}>{u.nome}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label style={labelStyle}>Prazo</label>
+            <input 
+              type="date" 
+              style={inputStyle} 
+              value={formEdit.previsaoLiberacao}
+              onChange={(e) => setFormEdit({ ...formEdit, previsaoLiberacao: e.target.value })} 
+            />
+          </div>
+
+          {board?.campoExtra1 && (
+            <div>
+              <label style={labelStyle}>{board.campoExtra1}</label>
+              <input 
+                style={inputStyle} 
+                value={formEdit.valorExtra1}
+                onChange={(e) => setFormEdit({ ...formEdit, valorExtra1: e.target.value })} 
+              />
             </div>
+          )}
 
-            {editando ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '20px' }}>
-                <div>
-                  <label style={labelStyle}>Título *</label>
-                  <input style={inputStyle} value={formEdit.titulo}
-                    onChange={(e) => setFormEdit({ ...formEdit, titulo: e.target.value })} />
-                </div>
-                <div>
-                  <label style={labelStyle}>Descrição</label>
-                  <textarea style={{ ...inputStyle, resize: 'vertical' }} rows={3} value={formEdit.descricao}
-                    onChange={(e) => setFormEdit({ ...formEdit, descricao: e.target.value })} />
-                </div>
-                <div>
-                  <label style={labelStyle}>Responsável</label>
-                  <select style={{ ...inputStyle, cursor: 'pointer' }} value={formEdit.responsavelId}
-                    onChange={(e) => setFormEdit({ ...formEdit, responsavelId: e.target.value })}>
-                    <option value="" style={{ background: '#1a1a2e' }}>Ninguém</option>
-                    {usuarios.map(u => (
-                      <option key={u.id} value={u.id} style={{ background: '#1a1a2e' }}>{u.nome}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label style={labelStyle}>Prazo</label>
-                  <input type="date" style={inputStyle} value={formEdit.previsaoLiberacao}
-                    onChange={(e) => setFormEdit({ ...formEdit, previsaoLiberacao: e.target.value })} />
-                </div>
-                {board?.campoExtra1 && (
-                  <div>
-                    <label style={labelStyle}>{board.campoExtra1}</label>
-                    <input style={inputStyle} value={formEdit.valorExtra1}
-                      onChange={(e) => setFormEdit({ ...formEdit, valorExtra1: e.target.value })} />
-                  </div>
-                )}
-                {board?.campoExtra2 && (
-                  <div>
-                    <label style={labelStyle}>{board.campoExtra2}</label>
-                    <input style={inputStyle} value={formEdit.valorExtra2}
-                      onChange={(e) => setFormEdit({ ...formEdit, valorExtra2: e.target.value })} />
-                  </div>
-                )}
-                {board?.campoExtra3 && (
-                  <div>
-                    <label style={labelStyle}>{board.campoExtra3}</label>
-                    <input style={inputStyle} value={formEdit.valorExtra3}
-                      onChange={(e) => setFormEdit({ ...formEdit, valorExtra3: e.target.value })} />
-                  </div>
-                )}
-                <div style={{ display: 'flex', gap: '10px', marginTop: '4px' }}>
-                  <Button variant="secondary" onClick={() => setEditando(false)} style={{ flex: 1, padding: '11px' }}>Cancelar</Button>
-                  <Button variant="primary" disabled={salvandoEdicao} onClick={salvarEdicao} style={{ flex: 2, padding: '11px' }}>
-                    {salvandoEdicao ? 'Salvando...' : 'Salvar alterações'}
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
-                  {[
-                    { label: 'Descrição', value: cardSelecionado.descricao },
-                    ...campos.map(c => ({ label: c.nome as string, value: valorCampo(cardSelecionado, c.chave) })),
-                    { label: 'Responsável', value: cardSelecionado.responsavelNome },
-                    { label: 'Prazo', value: cardSelecionado.previsaoLiberacao },
-                  ].filter(item => item.value).map(item => (
-                    <div key={item.label} style={{
-                      background: 'rgba(255,255,255,0.05)',
-                      border: '1px solid rgba(255,255,255,0.08)',
-                      borderRadius: '8px', padding: '10px 14px'
-                    }}>
-                      <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
-                        {item.label}
-                      </div>
-                      <div style={{ color: 'white', fontSize: '13px' }}>{item.value}</div>
-                    </div>
-                  ))}
-                </div>
+          {board?.campoExtra2 && (
+            <div>
+              <label style={labelStyle}>{board.campoExtra2}</label>
+              <input 
+                style={inputStyle} 
+                value={formEdit.valorExtra2}
+                onChange={(e) => setFormEdit({ ...formEdit, valorExtra2: e.target.value })} 
+              />
+            </div>
+          )}
 
-               {podeEditar && (
-                  <div style={{ marginBottom: '20px' }}>
-                    <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
-                      Mover para
-                    </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '14px' }}>
-                      {colunas.filter(c => c.id !== cardSelecionado.colunaId).map(coluna => (
-                        <button key={coluna.id} onClick={() => moverCard(cardSelecionado.id, coluna.id)} style={{
-                          padding: '6px 12px', background: 'rgba(255,255,255,0.05)',
-                          border: `1px solid ${coluna.cor}`, color: 'white', borderRadius: '8px',
-                          cursor: 'pointer', fontSize: '12px',
-                          display: 'flex', alignItems: 'center', gap: '6px'
-                        }}>
-                          <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: coluna.cor, display: 'inline-block' }} />
-                          {coluna.nome}
-                        </button>
-                      ))}
-                    </div>
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                      <Button variant="primary" onClick={iniciarEdicao} style={{ flex: 1 }}>Editar</Button>
-                      <Button variant="secondary" disabled={arquivando} onClick={() => arquivarCard(cardSelecionado.id)} style={{ flex: 1 }}>
-                        {arquivando ? 'Arquivando...' : 'Arquivar'}
-                      </Button>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setCopiaConfig({
-                          copiarTitulo: true, titulo: cardSelecionado.titulo || '',
-                          copiarDescricao: true, descricao: cardSelecionado.descricao || '',
-                          copiarExtra1: true, valorExtra1: cardSelecionado.valorExtra1 || '',
-                          copiarExtra2: true, valorExtra2: cardSelecionado.valorExtra2 || '',
-                          copiarExtra3: true, valorExtra3: cardSelecionado.valorExtra3 || '',
-                        });
-                        setMostrarReset(true);
-                      }}
-                      style={{
-                        width: '100%', marginTop: '10px', padding: '10px',
-                        background: 'rgba(29,158,117,0.15)',
-                        border: '1px solid rgba(29,158,117,0.4)',
-                        borderRadius: '8px', color: '#4fd1a5',
-                        cursor: 'pointer', fontSize: '13px', fontWeight: 600
-                      }}
-                    >
-                      🔄 Gerar cópia
-                    </button>
-                    <button
-                      onClick={() => deletarCard(cardSelecionado.id)}
-                      style={{
-                        width: '100%', marginTop: '10px', padding: '10px',
-                        background: 'rgba(226,75,74,0.15)',
-                        border: '1px solid rgba(226,75,74,0.4)',
-                        borderRadius: '8px', color: '#ff7875',
-                        cursor: 'pointer', fontSize: '13px', fontWeight: 600
-                      }}
-                    >
-                      🗑 Excluir card
-                    </button>
-                  </div>
-                )}
+          {board?.campoExtra3 && (
+            <div>
+              <label style={labelStyle}>{board.campoExtra3}</label>
+              <input 
+                style={inputStyle} 
+                value={formEdit.valorExtra3}
+                onChange={(e) => setFormEdit({ ...formEdit, valorExtra3: e.target.value })} 
+              />
+            </div>
+          )}
 
-                <div>
-                  <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
-                    Histórico
-                  </div>
-                  <Timeline
-                    historico={historico}
-                    loading={loadingHistorico}
-                    corDoEvento={corDaColuna}
-                  />
-                </div>
-              </>
-            )}
+          {/* 🟢 BOTÕES DE SALVAR E CANCELAR ADICIONADOS AQUI */}
+          <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+            <Button variant="secondary" onClick={() => setEditando(false)} style={{ flex: 1 }}>
+              Cancelar
+            </Button>
+            <Button variant="primary" onClick={salvarEdicao} style={{ flex: 1 }}>
+              Salvar Alterações
+            </Button>
           </div>
         </div>
+      ) : (
+        <>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
+            {[
+              ...(cardSelecionado.prioridade ? [{ 
+                label: 'Prioridade', 
+                value: CORES_PRIORIDADE[cardSelecionado.prioridade]?.label || cardSelecionado.prioridade 
+              }] : []),
+              { label: 'Descrição', value: cardSelecionado.descricao },
+              ...campos.map(c => ({ label: c.nome as string, value: valorCampo(cardSelecionado, c.chave) })),
+              { label: 'Responsável', value: cardSelecionado.responsavelNome },
+              { label: 'Prazo', value: cardSelecionado.previsaoLiberacao },
+            ].filter(item => item.value).map(item => (
+              <div key={item.label} style={{
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: '8px', padding: '10px 14px'
+              }}>
+                <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+                  {item.label}
+                </div>
+                <div style={{ color: 'white', fontSize: '13px' }}>{item.value}</div>
+              </div>
+            ))}
+          </div>
+
+         {podeEditar && cardSelecionado && (
+  <div style={{ marginBottom: '20px' }}>
+    <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+      Mover para
+    </div>
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '14px' }}>
+      {colunas.filter(c => c.id !== cardSelecionado?.colunaId).map(coluna => (
+        <button key={coluna.id} onClick={() => moverCard(cardSelecionado!.id, coluna.id)} style={{
+          padding: '6px 12px', background: 'rgba(255,255,255,0.05)',
+          border: `1px solid ${coluna.cor}`, color: 'white', borderRadius: '8px',
+          cursor: 'pointer', fontSize: '12px',
+          display: 'flex', alignItems: 'center', gap: '6px'
+        }}>
+          <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: coluna.cor, display: 'inline-block' }} />
+          {coluna.nome}
+        </button>
+      ))}
+    </div>
+    <div style={{ display: 'flex', gap: '10px' }}>
+      <Button variant="primary" onClick={iniciarEdicao} style={{ flex: 1 }}>Editar</Button>
+      <Button variant="secondary" disabled={arquivando} onClick={() => arquivarCard(cardSelecionado!.id)} style={{ flex: 1 }}>
+        {arquivando ? 'Arquivando...' : 'Arquivar'}
+      </Button>
+    </div>
+    
+    {/* Botão Gerar Cópia */}
+    <button
+      onClick={() => {
+        if (!cardSelecionado) return;
+        setCopiaConfig({
+          copiarTitulo: true, titulo: cardSelecionado.titulo || '',
+          copiarDescricao: true, descricao: cardSelecionado.descricao || '',
+          copiarExtra1: true, valorExtra1: cardSelecionado.valorExtra1 || '',
+          copiarExtra2: true, valorExtra2: cardSelecionado.valorExtra2 || '',
+          copiarExtra3: true, valorExtra3: cardSelecionado.valorExtra3 || '',
+        });
+        setMostrarReset(true);
+      }}
+      style={{
+        width: '100%', marginTop: '10px', padding: '10px',
+        background: 'rgba(29,158,117,0.15)',
+        border: '1px solid rgba(29,158,117,0.4)',
+        borderRadius: '8px', color: '#4fd1a5',
+        cursor: 'pointer', fontSize: '13px', fontWeight: 600
+      }}
+    >
+      🔄 Gerar cópia
+    </button>
+
+    {/* Botão Excluir */}
+    <button
+      onClick={() => cardSelecionado && deletarCard(cardSelecionado.id)}
+      style={{
+        width: '100%', marginTop: '10px', padding: '10px',
+        background: 'rgba(226,75,74,0.15)',
+        border: '1px solid rgba(226,75,74,0.4)',
+        borderRadius: '8px', color: '#ff7875',
+        cursor: 'pointer', fontSize: '13px', fontWeight: 600
+      }}
+    >
+      🗑 Excluir card
+    </button>
+  </div>
+)}
+
+<div>
+  <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+    Histórico
+  </div>
+  <Timeline
+    historico={historico}
+    loading={loadingHistorico}
+    corDoEvento={corDaColuna}
+  />
+</div>
+        </>
       )}
+    </div>
+  </div>
+)}
 
       {mostrarReset && cardSelecionado && (
         <div onClick={() => setMostrarReset(false)} style={{

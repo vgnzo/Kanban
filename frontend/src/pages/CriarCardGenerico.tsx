@@ -38,6 +38,7 @@ export default function CriarCardGenerico() {
   const [form, setForm] = useState({
     titulo: '',
     descricao: '',
+    prioridade: 'BAIXO',
     responsavelId: '',
     valorExtra1: '',
     valorExtra2: '',
@@ -50,12 +51,12 @@ export default function CriarCardGenerico() {
 
   const carregarDados = async () => {
     try {
-     const [resBoard, resColunas, resUsuarios] = await Promise.all([
-      api.get(`/api/boards/${boardId}`),
-      api.get(`/api/colunas/board/${boardId}`),
-      api.get('/api/usuarios/lista-simples'),
-    ]);
-    setBoard(resBoard.data);
+      const [resBoard, resColunas, resUsuarios] = await Promise.all([
+        api.get(`/api/boards/${boardId}`),
+        api.get(`/api/colunas/board/${boardId}`),
+        api.get('/api/usuarios/lista-simples'),
+      ]);
+      setBoard(resBoard.data);
       setColunas(resColunas.data);
       setUsuarios(resUsuarios.data);
     } catch {
@@ -77,7 +78,6 @@ export default function CriarCardGenerico() {
       return;
     }
 
-    // a primeira coluna (menor ordem) é onde o card nasce
     const primeiraColuna = [...colunas].sort((a, b) => a.ordem - b.ordem)[0];
 
     setSalvando(true);
@@ -85,6 +85,7 @@ export default function CriarCardGenerico() {
       await api.post('/api/cards/generico', {
         titulo: form.titulo.trim(),
         descricao: form.descricao.trim() || null,
+        prioridade: form.prioridade,
         colunaId: primeiraColuna.id,
         responsavelId: form.responsavelId || null,
         valorExtra1: form.valorExtra1.trim() || null,
@@ -121,8 +122,10 @@ export default function CriarCardGenerico() {
   };
 
   return (
+    // 🟢 Habilitado height: 100vh e overflowY: auto para permitir rolagem
     <div style={{
-      minHeight: '100vh',
+      height: '100vh',
+      overflowY: 'auto',
       background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
       fontFamily: "'Segoe UI', sans-serif"
     }}>
@@ -133,7 +136,10 @@ export default function CriarCardGenerico() {
         padding: '12px 24px',
         display: 'flex',
         alignItems: 'center',
-        gap: '16px'
+        gap: '16px',
+        position: 'sticky',
+        top: 0,
+        zIndex: 10
       }}>
         <Button variant="ghost" onClick={() => navigate(`/kanban-generico/${boardId}`)}>← Voltar</Button>
         <div>
@@ -142,7 +148,8 @@ export default function CriarCardGenerico() {
         </div>
       </header>
 
-      <div style={{ display: 'flex', justifyContent: 'center', padding: '32px 16px' }}>
+      {/* 🟢 Adicionado espaço extra no bottom (padding: '32px 16px 64px 16px') */}
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '32px 16px 64px 16px' }}>
         <div style={{
           width: '100%',
           maxWidth: '520px',
@@ -163,6 +170,19 @@ export default function CriarCardGenerico() {
               </div>
 
               <div>
+                <label style={labelStyle}>Prioridade</label>
+                <select 
+                  style={{ ...inputStyle, cursor: 'pointer' }} 
+                  value={form.prioridade}
+                  onChange={(e) => setForm({ ...form, prioridade: e.target.value })}
+                >
+                  <option value="BAIXO" style={{ background: '#1a1a2e' }}>🟢 Baixa</option>
+                  <option value="MEDIO" style={{ background: '#1a1a2e' }}>🟡 Média</option>
+                  <option value="ALTO" style={{ background: '#1a1a2e' }}>🔴 Alta</option>
+                </select>
+              </div>
+
+              <div>
                 <label style={labelStyle}>Descrição</label>
                 <textarea style={{ ...inputStyle, resize: 'vertical' }} rows={3} value={form.descricao}
                   placeholder="Detalhes da tarefa (opcional)"
@@ -180,7 +200,6 @@ export default function CriarCardGenerico() {
                 </select>
               </div>
 
-              {/* campos extras nomeados pelo board */}
               {board?.campoExtra1 && (
                 <div>
                   <label style={labelStyle}>{board.campoExtra1}</label>
