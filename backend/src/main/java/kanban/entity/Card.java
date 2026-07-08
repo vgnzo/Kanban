@@ -25,6 +25,9 @@ public class Card {
     @JoinColumn(name = "coluna_id", nullable = false)
     private Coluna coluna;
 
+    @Enumerated(EnumType.STRING)
+private Prioridade prioridade = Prioridade.BAIXO;
+
 
     @Column(name = "arquivado_em")
     private LocalDateTime arquivadoEm;

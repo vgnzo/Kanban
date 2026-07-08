@@ -14,4 +14,7 @@ public interface CardRepository extends JpaRepository<Card, UUID> {
 
     List<Card> findByColunaBoardIdAndArquivadoEmIsNull(UUID boardId);
 
+    // Busca os cards de uma coluna ordenando da maior prioridade para a menor
+List<Card> findByColunaIdOrderByPrioridadeDesc(UUID colunaId);
+
 List<Card> findByColunaBoardIdAndArquivadoEmIsNotNull(UUID boardId);}
