@@ -4,6 +4,7 @@ public record LoginResponse (
     String token,
     String nome,
     String email,
-    String perfil
+    String perfil,
+    String avatar
     
 ) {}

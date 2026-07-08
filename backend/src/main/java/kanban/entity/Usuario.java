@@ -35,4 +35,10 @@ public class Usuario {
     public enum Perfil {
         ADMIN, USER
     }
+
+    @Column(name = "avatar")
+private String avatar;
+
+public String getAvatar() { return avatar; }
+public void setAvatar(String avatar) { this.avatar = avatar; }
 }

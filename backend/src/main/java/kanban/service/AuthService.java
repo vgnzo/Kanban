@@ -38,7 +38,8 @@ public class AuthService {
                 token,
                 usuario.getNome(),
                 usuario.getEmail(),
-                usuario.getPerfil().name()
+                usuario.getPerfil().name(),
+                usuario.getAvatar()
         );
     }
 
@@ -57,11 +58,30 @@ public class AuthService {
 
         String token = jwtUtil.gerarToken(salvo.getEmail(), salvo.getPerfil().name());
 
-        return new LoginResponse(
-                token,
-                salvo.getNome(),
-                salvo.getEmail(),
-                salvo.getPerfil().name()
-        );
+       return new LoginResponse(token, usuario.getNome(), usuario.getEmail(), usuario.getPerfil().name(), usuario.getAvatar());
     }
+
+    public void trocarSenha(String emailUsuario, String senhaAtual, String senhaNova){
+        Usuario usuario = usuarioRepository.findByEmail(emailUsuario)
+            .orElseThrow(() -> new RuntimeException("Usuário não encontrado!"));
+
+
+            //confere se a senha atual está correta
+            if (!passwordEncoder.matches(senhaAtual, usuario.getSenhaHash())){
+                throw new RuntimeException("Senha atual incorreta");
+
+            }
+
+            usuario.setSenhaHash(passwordEncoder.encode(senhaNova));
+            usuarioRepository.save(usuario);
+    
+        }
+
+
+        public void salvarAvatar(String emailUsuario, String avatar) {
+    Usuario usuario = usuarioRepository.findByEmail(emailUsuario)
+        .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+    usuario.setAvatar(avatar);
+    usuarioRepository.save(usuario);
+}
 }
