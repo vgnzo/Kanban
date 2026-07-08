@@ -19,8 +19,12 @@ export default function Login() {
     setLoading(true);
     try {
       const response = await api.post('/api/auth/login', { email, senha });
-      const { token, nome, perfil } = response.data;
-      login(token, { nome, email, perfil });
+      
+      // 📌 ADICIONADO O 'avatar' AQUI NA RESPOSTA DA API:
+      const { token, nome, perfil, avatar } = response.data;
+      
+      // 📌 PASSANDO O 'avatar' PARA O CONTEXTO DE AUTENTICAÇÃO:
+      login(token, { nome, email, perfil, avatar });
 
       // após login, vai para a tela de seleção de quadros
       navigate('/boards');
