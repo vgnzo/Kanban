@@ -22,5 +22,6 @@ public record CardResponse(
     LocalDateTime atualizadoEm,
     String valorExtra1,
     String valorExtra2,
-    String valorExtra3
+    String valorExtra3,
+    String prioridade
 ) {}
