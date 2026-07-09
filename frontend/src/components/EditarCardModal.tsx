@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 interface EditarCardProps {
   card: {
@@ -14,7 +14,7 @@ interface EditarCardProps {
 export default function EditarCardModal({ card, onSalvar, onCancelar }: EditarCardProps) {
   const [titulo, setTitulo] = useState(card.titulo);
   const [descricao, setDescricao] = useState(card.descricao);
-  const [prioridade, setPrioridade] = useState(card.prioridade);
+  const [prioridade,] = useState(card.prioridade);
   const [salvando, setSalvando] = useState(false);
 
   const handleSalvar = async () => {

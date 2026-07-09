@@ -69,8 +69,9 @@ export default function Perfil() {
   const inicial = (usuario?.nome || '?').charAt(0).toUpperCase();
 
   return (
-    <div style={{
-      minHeight: '100vh',
+   <div style={{
+      height: '100vh',
+      overflowY: 'auto',
       background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
       fontFamily: "'Segoe UI', sans-serif",
       display: 'flex',
