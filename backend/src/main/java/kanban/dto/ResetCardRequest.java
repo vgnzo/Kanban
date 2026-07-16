@@ -1,5 +1,7 @@
 package kanban.dto;
 
+import kanban.entity.Prioridade;
+
 public record ResetCardRequest(
     boolean copiarTitulo,
     boolean copiarDescricao,
@@ -10,5 +12,6 @@ public record ResetCardRequest(
     String descricao,
     String valorExtra1,
     String valorExtra2,
-    String valorExtra3
+    String valorExtra3,
+    Prioridade prioridade
 ) {}
