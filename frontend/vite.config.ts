@@ -1,7 +1,46 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { VitePWA } from 'vite-plugin-pwa'
 
-// https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: ['favicon-48.png', 'apple-touch-icon.png', 'icone.svg'],
+      manifest: {
+        name: 'Fluxo',
+        short_name: 'Fluxo',
+        description: 'Sistema de quadros e tarefas',
+        theme_color: '#16213e',
+        background_color: '#1a1a2e',
+        display: 'standalone',
+        orientation: 'portrait',
+        start_url: '/',
+        icons: [
+          {
+            src: 'pwa-192x192.png',
+            sizes: '192x192',
+            type: 'image/png',
+          },
+          {
+            src: 'pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+          },
+          {
+            src: 'pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any maskable',
+          },
+        ],
+      },
+      workbox: {
+        // cache basico: o app abre rapido, mas os dados continuam vindo do backend
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        navigateFallbackDenylist: [/^\/api/],
+      },
+    }),
+  ],
 })

@@ -1,0 +1,32 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="fundo" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a1a2e"/>
+      <stop offset="50%" stop-color="#16213e"/>
+      <stop offset="100%" stop-color="#0f3460"/>
+    </linearGradient>
+    <linearGradient id="col1" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#667eea"/>
+      <stop offset="100%" stop-color="#764ba2"/>
+    </linearGradient>
+  </defs>
+
+  <!-- fundo arredondado -->
+  <rect width="512" height="512" rx="112" fill="url(#fundo)"/>
+
+  <!-- três colunas do kanban -->
+  <!-- coluna 1 -->
+  <rect x="104" y="140" width="86" height="232" rx="18" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>
+  <rect x="118" y="160" width="58" height="40" rx="9" fill="url(#col1)"/>
+  <rect x="118" y="212" width="58" height="40" rx="9" fill="rgba(255,255,255,0.22)"/>
+  <rect x="118" y="264" width="58" height="40" rx="9" fill="rgba(255,255,255,0.14)"/>
+
+  <!-- coluna 2 -->
+  <rect x="213" y="140" width="86" height="232" rx="18" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>
+  <rect x="227" y="160" width="58" height="40" rx="9" fill="rgba(255,255,255,0.22)"/>
+  <rect x="227" y="212" width="58" height="40" rx="9" fill="#4fd1a5"/>
+
+  <!-- coluna 3 -->
+  <rect x="322" y="140" width="86" height="232" rx="18" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>
+  <rect x="336" y="160" width="58" height="40" rx="9" fill="rgba(255,255,255,0.14)"/>
+</svg>
