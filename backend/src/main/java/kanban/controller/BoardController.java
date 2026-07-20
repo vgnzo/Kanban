@@ -1,5 +1,6 @@
 package kanban.controller;
 
+import kanban.dto.BoardConfiguracaoRequest;
 import kanban.dto.BoardRequest;
 import kanban.dto.BoardResponse;
 import kanban.service.BoardService;
@@ -40,6 +41,14 @@ public class BoardController {
             @AuthenticationPrincipal String email){
         return ResponseEntity.ok(boardService.criar(request, email));
     }
+
+    @PatchMapping("/{id}/configuracao")
+public ResponseEntity<BoardResponse> atualizarConfiguracao(
+        @PathVariable UUID id,
+        @RequestBody BoardConfiguracaoRequest request,
+        @AuthenticationPrincipal String email) {
+    return ResponseEntity.ok(boardService.atualizarConfiguracao(id, request, email));
+}
 
 @DeleteMapping("/{id}")
 public ResponseEntity<Void> deletar(

@@ -1,5 +1,6 @@
 package kanban.service;
 
+import kanban.dto.BoardConfiguracaoRequest;
 import kanban.dto.BoardRequest;
 import kanban.dto.BoardResponse;
 import kanban.entity.Board;
@@ -115,6 +116,35 @@ public class BoardService {
         colunaRepository.deleteAll(colunas);
         boardRepository.delete(board);
     }
+
+    @Transactional
+public BoardResponse atualizarConfiguracao(
+        UUID id,
+        BoardConfiguracaoRequest request,
+        String emailUsuario) {
+
+    Board board = boardRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Quadro não encontrado"));
+
+    Usuario usuario = usuarioRepository.findByEmail(emailUsuario)
+            .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+    boolean souDono = board.getDono() != null
+            && board.getDono().getId().equals(usuario.getId());
+
+    if (!souDono) {
+        throw new RuntimeException("Apenas o dono pode alterar a configuração do quadro");
+    }
+
+    board.setCampoExtra1(vazioParaNull(request.campoExtra1()));
+    board.setCampoExtra2(vazioParaNull(request.campoExtra2()));
+    board.setCampoExtra3(vazioParaNull(request.campoExtra3()));
+    board.setCampoExtra4(vazioParaNull(request.campoExtra4()));
+    board.setCampoExtra5(vazioParaNull(request.campoExtra5()));
+
+    Board atualizado = boardRepository.save(board);
+    return toResponse(atualizado, usuario);
+}
 
     // Todos os usuários veem todos os quadros na lista.
     // O toResponse marca quais têm acesso (dono ou permissão) e quais estão trancados.
