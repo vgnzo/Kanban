@@ -16,7 +16,9 @@ interface Board {
   tipo: string;
   campoExtra1: string | null;
   campoExtra2: string | null;
-  campoExtra3: string | null;
+ campoExtra3: string | null;
+  campoExtra4: string | null;
+  campoExtra5: string | null;
 }
 
 interface Usuario {
@@ -43,6 +45,8 @@ export default function CriarCardGenerico() {
     valorExtra1: '',
     valorExtra2: '',
     valorExtra3: '',
+    valorExtra4: '',
+    valorExtra5: '',
   });
 
   useEffect(() => {
@@ -88,9 +92,11 @@ export default function CriarCardGenerico() {
         prioridade: form.prioridade,
         colunaId: primeiraColuna.id,
         responsavelId: form.responsavelId || null,
-        valorExtra1: form.valorExtra1.trim() || null,
+       valorExtra1: form.valorExtra1.trim() || null,
         valorExtra2: form.valorExtra2.trim() || null,
         valorExtra3: form.valorExtra3.trim() || null,
+        valorExtra4: form.valorExtra4.trim() || null,
+        valorExtra5: form.valorExtra5.trim() || null,
       });
       navigate(`/kanban-generico/${boardId}`);
     } catch {
@@ -214,11 +220,25 @@ export default function CriarCardGenerico() {
                     onChange={(e) => setForm({ ...form, valorExtra2: e.target.value })} />
                 </div>
               )}
-              {board?.campoExtra3 && (
+            {board?.campoExtra3 && (
                 <div>
                   <label style={labelStyle}>{board.campoExtra3}</label>
                   <input style={inputStyle} value={form.valorExtra3}
                     onChange={(e) => setForm({ ...form, valorExtra3: e.target.value })} />
+                </div>
+              )}
+              {board?.campoExtra4 && (
+                <div>
+                  <label style={labelStyle}>{board.campoExtra4}</label>
+                  <input style={inputStyle} value={form.valorExtra4}
+                    onChange={(e) => setForm({ ...form, valorExtra4: e.target.value })} />
+                </div>
+              )}
+              {board?.campoExtra5 && (
+                <div>
+                  <label style={labelStyle}>{board.campoExtra5}</label>
+                  <input style={inputStyle} value={form.valorExtra5}
+                    onChange={(e) => setForm({ ...form, valorExtra5: e.target.value })} />
                 </div>
               )}
 

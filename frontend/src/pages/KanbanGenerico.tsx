@@ -33,8 +33,10 @@ interface Card {
   previsaoLiberacao: string | null;
   valorExtra1: string | null;
   valorExtra2: string | null;
-  valorExtra3: string | null;
-    prioridade: string | null;
+ valorExtra3: string | null;
+  valorExtra4: string | null;
+  valorExtra5: string | null;
+  prioridade: string | null;
 }
 
 interface Board {
@@ -44,6 +46,8 @@ interface Board {
   campoExtra1: string | null;
   campoExtra2: string | null;
   campoExtra3: string | null;
+  campoExtra4: string | null;
+  campoExtra5: string | null;
   nivelAcesso: string | null;
 }
 
@@ -82,6 +86,8 @@ export default function KanbanGenerico() {
     copiarExtra1: true, valorExtra1: '',
     copiarExtra2: true, valorExtra2: '',
     copiarExtra3: true, valorExtra3: '',
+    copiarExtra4: true, valorExtra4: '',
+    copiarExtra5: true, valorExtra5: '',
     prioridade: 'BAIXO',
   });
 
@@ -106,6 +112,8 @@ export default function KanbanGenerico() {
     valorExtra1: '',
     valorExtra2: '',
     valorExtra3: '',
+    valorExtra4: '',
+    valorExtra5: '',
   });
 
   const sensors = useSensors(
@@ -187,10 +195,12 @@ export default function KanbanGenerico() {
   };
 
   // nomes dos campos extras (vêm do board); se não tiver nome, o campo não é usado
-  const campos = [
+ const campos = [
     { nome: board?.campoExtra1, chave: 'valorExtra1' as const },
     { nome: board?.campoExtra2, chave: 'valorExtra2' as const },
     { nome: board?.campoExtra3, chave: 'valorExtra3' as const },
+    { nome: board?.campoExtra4, chave: 'valorExtra4' as const },
+    { nome: board?.campoExtra5, chave: 'valorExtra5' as const },
   ].filter(c => c.nome);
 
   const responsaveisDisponiveis = Array.from(
@@ -245,9 +255,11 @@ export default function KanbanGenerico() {
       responsavelId: cardSelecionado.responsavelId || '',
       previsaoLiberacao: cardSelecionado.previsaoLiberacao || '',
       prioridade: cardSelecionado.prioridade || 'BAIXO',
-      valorExtra1: cardSelecionado.valorExtra1 || '',
+     valorExtra1: cardSelecionado.valorExtra1 || '',
       valorExtra2: cardSelecionado.valorExtra2 || '',
       valorExtra3: cardSelecionado.valorExtra3 || '',
+      valorExtra4: cardSelecionado.valorExtra4 || '',
+      valorExtra5: cardSelecionado.valorExtra5 || '',
     });
     setEditando(true);
     try {
@@ -271,6 +283,8 @@ export default function KanbanGenerico() {
         valorExtra1: formEdit.valorExtra1 || null,
         valorExtra2: formEdit.valorExtra2 || null,
         valorExtra3: formEdit.valorExtra3 || null,
+        valorExtra4: formEdit.valorExtra4 || null,
+        valorExtra5: formEdit.valorExtra5 || null,
       });
       await carregarTudo();
       const atualizado = (await api.get(`/api/cards/board/${boardId}`)).data
@@ -371,8 +385,7 @@ export default function KanbanGenerico() {
     return col ? col.cor : 'rgba(255,255,255,0.4)';
   };
 
-  const valorCampo = (card: Card, chave: 'valorExtra1' | 'valorExtra2' | 'valorExtra3') => card[chave];
-
+const valorCampo = (card: Card, chave: 'valorExtra1' | 'valorExtra2' | 'valorExtra3' | 'valorExtra4' | 'valorExtra5') => card[chave];
   const inputStyle = {
     width: '100%',
     padding: '10px 14px',
@@ -826,11 +839,25 @@ export default function KanbanGenerico() {
                       onChange={(e) => setFormEdit({ ...formEdit, valorExtra2: e.target.value })} />
                   </div>
                 )}
-                {board?.campoExtra3 && (
+             {board?.campoExtra3 && (
                   <div>
                     <label style={labelStyle}>{board.campoExtra3}</label>
                     <input style={inputStyle} value={formEdit.valorExtra3}
                       onChange={(e) => setFormEdit({ ...formEdit, valorExtra3: e.target.value })} />
+                  </div>
+                )}
+                {board?.campoExtra4 && (
+                  <div>
+                    <label style={labelStyle}>{board.campoExtra4}</label>
+                    <input style={inputStyle} value={formEdit.valorExtra4}
+                      onChange={(e) => setFormEdit({ ...formEdit, valorExtra4: e.target.value })} />
+                  </div>
+                )}
+                {board?.campoExtra5 && (
+                  <div>
+                    <label style={labelStyle}>{board.campoExtra5}</label>
+                    <input style={inputStyle} value={formEdit.valorExtra5}
+                      onChange={(e) => setFormEdit({ ...formEdit, valorExtra5: e.target.value })} />
                   </div>
                 )}
                 <div style={{ display: 'flex', gap: '10px', marginTop: '4px' }}>
@@ -893,7 +920,9 @@ export default function KanbanGenerico() {
                           copiarDescricao: true, descricao: cardSelecionado.descricao || '',
                           copiarExtra1: true, valorExtra1: cardSelecionado.valorExtra1 || '',
                           copiarExtra2: true, valorExtra2: cardSelecionado.valorExtra2 || '',
-                          copiarExtra3: true, valorExtra3: cardSelecionado.valorExtra3 || '',
+                        copiarExtra3: true, valorExtra3: cardSelecionado.valorExtra3 || '',
+                          copiarExtra4: true, valorExtra4: cardSelecionado.valorExtra4 || '',
+                          copiarExtra5: true, valorExtra5: cardSelecionado.valorExtra5 || '',
                           prioridade: cardSelecionado.prioridade || 'BAIXO',
                         });
                         setMostrarReset(true);
@@ -962,8 +991,9 @@ export default function KanbanGenerico() {
                 { toggle: 'copiarDescricao' as const, campo: 'descricao' as const, label: 'Descrição' },
                 ...(board?.campoExtra1 ? [{ toggle: 'copiarExtra1' as const, campo: 'valorExtra1' as const, label: board.campoExtra1 }] : []),
                 ...(board?.campoExtra2 ? [{ toggle: 'copiarExtra2' as const, campo: 'valorExtra2' as const, label: board.campoExtra2 }] : []),
-                ...(board?.campoExtra3 ? [{ toggle: 'copiarExtra3' as const, campo: 'valorExtra3' as const, label: board.campoExtra3 }] : []),
-              ].map(item => {
+...(board?.campoExtra3 ? [{ toggle: 'copiarExtra3' as const, campo: 'valorExtra3' as const, label: board.campoExtra3 }] : []),
+                ...(board?.campoExtra4 ? [{ toggle: 'copiarExtra4' as const, campo: 'valorExtra4' as const, label: board.campoExtra4 }] : []),
+                ...(board?.campoExtra5 ? [{ toggle: 'copiarExtra5' as const, campo: 'valorExtra5' as const, label: board.campoExtra5 }] : []),              ].map(item => {
                 const marcado = copiaConfig[item.toggle];
                 return (
                   <div key={item.toggle} style={{

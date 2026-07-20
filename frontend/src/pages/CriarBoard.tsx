@@ -15,6 +15,8 @@ export default function CriarBoard() {
   const [campoExtra1, setCampoExtra1] = useState('');
   const [campoExtra2, setCampoExtra2] = useState('');
   const [campoExtra3, setCampoExtra3] = useState('');
+  const [campoExtra4, setCampoExtra4] = useState('');
+const [campoExtra5, setCampoExtra5] = useState('');
   const [colunas, setColunas] = useState<ColunaForm[]>([]);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState('');
@@ -55,6 +57,8 @@ export default function CriarBoard() {
         campoExtra1: campoExtra1.trim() || null,
         campoExtra2: campoExtra2.trim() || null,
         campoExtra3: campoExtra3.trim() || null,
+        campoExtra4: campoExtra4.trim() || null,
+campoExtra5: campoExtra5.trim() || null,
         colunas: colunas.map(c => ({ nome: c.nome.trim(), cor: c.cor })),
       });
       navigate('/boards');
@@ -143,6 +147,19 @@ export default function CriarBoard() {
                 onChange={(e) => setCampoExtra2(e.target.value)} />
               <input style={inputStyle} value={campoExtra3} placeholder="Campo 3 (opcional)"
                 onChange={(e) => setCampoExtra3(e.target.value)} />
+                <input
+                    style={inputStyle}
+                    value={campoExtra4}
+                    placeholder="Campo 4 (opcional)"
+                    onChange={(e) => setCampoExtra4(e.target.value)}
+                  />
+
+                  <input
+                    style={inputStyle}
+                    value={campoExtra5}
+                    placeholder="Campo 5 (opcional)"
+                    onChange={(e) => setCampoExtra5(e.target.value)}
+                  />
             </div>
           </div>
 
