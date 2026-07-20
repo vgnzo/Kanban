@@ -614,6 +614,20 @@ export default function KanbanGenerico() {
                             {card.titulo}
                           </span>
                         </div>
+                        {card.descricao && (
+                          <div style={{
+                            fontSize: '11px',
+                            color: 'rgba(255,255,255,0.55)',
+                            marginBottom: '6px',
+                            lineHeight: 1.4,
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden'
+                          }}>
+                            {card.descricao}
+                          </div>
+                        )}
                         {campos.map(campo => {
                           const valor = valorCampo(card, campo.chave);
                           if (!valor) return null;
