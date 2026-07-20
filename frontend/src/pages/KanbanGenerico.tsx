@@ -76,6 +76,19 @@ export default function KanbanGenerico() {
   const [nomeNovaColuna, setNomeNovaColuna] = useState('');
   const [corNovaColuna, setCorNovaColuna] = useState('#378ADD');
   const [salvandoColuna, setSalvandoColuna] = useState(false);
+  const [mostrarConfigBoard, setMostrarConfigBoard] = useState(false);
+const [salvandoConfigBoard, setSalvandoConfigBoard] = useState(false);
+
+const [configBoard, setConfigBoard] = useState({
+  campoExtra1: '',
+  campoExtra2: '',
+  campoExtra3: '',
+  campoExtra4: '',
+  campoExtra5: '',
+});
+
+
+
 
   // reset / gerar cópia
   const [mostrarReset, setMostrarReset] = useState(false);
@@ -90,6 +103,9 @@ export default function KanbanGenerico() {
     copiarExtra5: true, valorExtra5: '',
     prioridade: 'BAIXO',
   });
+
+    
+
 
   // pode editar o conteúdo (cards/colunas) se tem nível EDITAR neste quadro
   const podeEditar = nivelAcesso === 'EDITAR';
@@ -137,6 +153,41 @@ export default function KanbanGenerico() {
     setColunas(resColunas.data);
     setCards(resCards.data);
   };
+
+  const abrirConfiguracaoBoard = () => {
+  if (!board) return;
+
+  setConfigBoard({
+    campoExtra1: board.campoExtra1 || '',
+    campoExtra2: board.campoExtra2 || '',
+    campoExtra3: board.campoExtra3 || '',
+    campoExtra4: board.campoExtra4 || '',
+    campoExtra5: board.campoExtra5 || '',
+  });
+
+  setMostrarConfigBoard(true);
+};
+
+const salvarConfiguracaoBoard = async () => {
+  setSalvandoConfigBoard(true);
+
+  try {
+    await api.patch(`/api/boards/${boardId}/configuracao`, {
+      campoExtra1: configBoard.campoExtra1.trim() || null,
+      campoExtra2: configBoard.campoExtra2.trim() || null,
+      campoExtra3: configBoard.campoExtra3.trim() || null,
+      campoExtra4: configBoard.campoExtra4.trim() || null,
+      campoExtra5: configBoard.campoExtra5.trim() || null,
+    });
+
+    await carregarTudo();
+    setMostrarConfigBoard(false);
+  } catch (err: any) {
+    alert(err.response?.data?.message || 'Não foi possível salvar as configurações.');
+  } finally {
+    setSalvandoConfigBoard(false);
+  }
+};
 
   const adicionarColuna = async () => {
     if (!nomeNovaColuna.trim()) return;
@@ -444,9 +495,17 @@ const valorCampo = (card: Card, chave: 'valorExtra1' | 'valorExtra2' | 'valorExt
           {podeEditar && (
             <Button variant="primary" onClick={() => navigate(`/criar-card-generico/${boardId}`)}>+ Novo card</Button>
           )}
-          {souDono && (
-            <Button variant="secondary" onClick={() => navigate(`/solicitacoes/${boardId}`)}>Solicitações</Button>
-          )}
+        {souDono && (
+  <>
+    <Button variant="secondary" onClick={abrirConfiguracaoBoard}>
+      ⚙ Campos
+    </Button>
+
+    <Button variant="secondary" onClick={() => navigate(`/solicitacoes/${boardId}`)}>
+      Solicitações
+    </Button>
+  </>
+)}
           <Button variant="secondary" onClick={() => navigate(`/historico-generico/${boardId}`)}>Histórico</Button>
           <Button variant="secondary" onClick={logout}>Sair</Button>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', marginLeft: '4px' }}>
@@ -967,6 +1026,81 @@ const valorCampo = (card: Card, chave: 'valorExtra1' | 'valorExtra2' | 'valorExt
           </div>
         </div>
       )}
+      {mostrarConfigBoard && (
+  <div
+    onClick={() => setMostrarConfigBoard(false)}
+    style={{
+      position: 'fixed',
+      inset: 0,
+      zIndex: 200,
+      background: 'rgba(0,0,0,0.7)',
+      backdropFilter: 'blur(4px)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    }}
+  >
+    <div
+      onClick={(e) => e.stopPropagation()}
+      style={{
+        width: '90%',
+        maxWidth: '460px',
+        padding: '28px',
+        borderRadius: '16px',
+        background: 'linear-gradient(135deg, #1a1a2e, #16213e)',
+        border: '1px solid rgba(255,255,255,0.15)',
+      }}
+    >
+      <h3 style={{ color: 'white', margin: '0 0 8px' }}>
+        Campos personalizados
+      </h3>
+
+      <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', margin: '0 0 20px' }}>
+        Defina os nomes dos campos exibidos nos cards deste quadro.
+      </p>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        {([
+          ['campoExtra1', 'Campo 1 (ex.: Setor)'],
+          ['campoExtra2', 'Campo 2 (ex.: Cliente)'],
+          ['campoExtra3', 'Campo 3'],
+          ['campoExtra4', 'Campo 4'],
+          ['campoExtra5', 'Campo 5'],
+        ] as const).map(([campo, placeholder]) => (
+          <input
+            key={campo}
+            style={inputStyle}
+            value={configBoard[campo]}
+            placeholder={placeholder}
+            onChange={(e) => setConfigBoard({
+              ...configBoard,
+              [campo]: e.target.value,
+            })}
+          />
+        ))}
+      </div>
+
+      <div style={{ display: 'flex', gap: '10px', marginTop: '22px' }}>
+        <Button
+          variant="secondary"
+          onClick={() => setMostrarConfigBoard(false)}
+          style={{ flex: 1 }}
+        >
+          Cancelar
+        </Button>
+
+        <Button
+          variant="primary"
+          disabled={salvandoConfigBoard}
+          onClick={salvarConfiguracaoBoard}
+          style={{ flex: 2 }}
+        >
+          {salvandoConfigBoard ? 'Salvando...' : 'Salvar campos'}
+        </Button>
+      </div>
+    </div>
+  </div>
+)}
 
       {mostrarReset && cardSelecionado && (
         <div onClick={() => setMostrarReset(false)} style={{
