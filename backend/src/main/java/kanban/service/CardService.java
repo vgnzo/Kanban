@@ -141,9 +141,11 @@ public class CardService {
                 card.getPrevisaoLiberacao(),
                 card.getCriadoEm(),
                 card.getAtualizadoEm(),
-                card.getValorExtra1(),
+          card.getValorExtra1(),
                 card.getValorExtra2(),
                 card.getValorExtra3(),
+                card.getValorExtra4(),
+                card.getValorExtra5(),
                 card.getPrioridade() != null ? card.getPrioridade().name() : null
         );
     }
@@ -265,6 +267,9 @@ public class CardService {
         card.setValorExtra1(request.valorExtra1());
         card.setValorExtra2(request.valorExtra2());
         card.setValorExtra3(request.valorExtra3());
+        card.setValorExtra4(request.valorExtra4());
+        card.setValorExtra5(request.valorExtra5());
+
 
         if (request.responsavelId() != null) {
             usuarioRepository.findById(request.responsavelId())
@@ -341,6 +346,18 @@ public class CardService {
             card.setValorExtra3(request.valorExtra3());
         }
 
+        // ----- CAMPO EXTRA 4 -----
+        if (!java.util.Objects.equals(card.getValorExtra4(), request.valorExtra4())) {
+            registrarHistorico(card, null, null, emailUsuario, "Campo 4 atualizado");
+            card.setValorExtra4(request.valorExtra4());
+        }
+
+        // ----- CAMPO EXTRA 5 -----
+        if (!java.util.Objects.equals(card.getValorExtra5(), request.valorExtra5())) {
+            registrarHistorico(card, null, null, emailUsuario, "Campo 5 atualizado");
+            card.setValorExtra5(request.valorExtra5());
+        }
+
         card.setAtualizadoEm(LocalDateTime.now());
         Card salvo = cardRepository.save(card);
 
@@ -371,6 +388,9 @@ public class CardService {
         novo.setValorExtra1(request.copiarExtra1() ? request.valorExtra1() : null);
         novo.setValorExtra2(request.copiarExtra2() ? request.valorExtra2() : null);
         novo.setValorExtra3(request.copiarExtra3() ? request.valorExtra3() : null);
+        novo.setValorExtra4(request.copiarExtra4() ? request.valorExtra4() : null);
+        novo.setValorExtra5(request.copiarExtra5() ? request.valorExtra5() : null);
+        
         if (request.prioridade() != null) {
             novo.setPrioridade(request.prioridade());
         }

@@ -63,6 +63,8 @@ public class BoardService {
         board.setCampoExtra1(vazioParaNull(request.campoExtra1()));
         board.setCampoExtra2(vazioParaNull(request.campoExtra2()));
         board.setCampoExtra3(vazioParaNull(request.campoExtra3()));
+        board.setCampoExtra4(vazioParaNull(request.campoExtra4()));
+        board.setCampoExtra5(vazioParaNull(request.campoExtra5()));
         board.setDono(dono);
 
         Board salvo = boardRepository.save(board);
@@ -159,6 +161,8 @@ public class BoardService {
                 board.getCampoExtra1(),
                 board.getCampoExtra2(),
                 board.getCampoExtra3(),
+                board.getCampoExtra4(),
+                board.getCampoExtra5(),
                 souDono,
                 temAcesso,
                 nivelAcesso

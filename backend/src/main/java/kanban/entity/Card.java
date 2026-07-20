@@ -63,4 +63,10 @@ private Prioridade prioridade = Prioridade.BAIXO;
 
     @Column(name = "valor_extra_3", columnDefinition = "TEXT")
     private String valorExtra3;
+
+    @Column(name = "valor_extra_4", columnDefinition = "TEXT")
+    private String valorExtra4;
+
+    @Column(name = "valor_extra_5", columnDefinition = "TEXT")
+    private String valorExtra5;
 }

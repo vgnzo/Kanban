@@ -10,6 +10,8 @@ public record BoardRequest(
     String campoExtra1,
     String campoExtra2,
     String campoExtra3,
+    String campoExtra4,
+    String campoExtra5,
 
     @NotEmpty @Size(max = 15, message = "Maximo de 15 colunas por quadro")
     List<ColunaRequest> colunas

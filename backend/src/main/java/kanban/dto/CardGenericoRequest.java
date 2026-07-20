@@ -13,5 +13,7 @@ public record CardGenericoRequest(
     Prioridade prioridade,
     String valorExtra1,
     String valorExtra2,
-    String valorExtra3
+    String valorExtra3,
+    String valorExtra4,
+    String valorExtra5
 ) {}

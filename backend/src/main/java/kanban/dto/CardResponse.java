@@ -23,5 +23,7 @@ public record CardResponse(
     String valorExtra1,
     String valorExtra2,
     String valorExtra3,
+    String valorExtra4,
+    String valorExtra5,
     String prioridade
 ) {}

@@ -37,6 +37,11 @@ public class Board {
     @Column(name = "campo_extra_3", length = 60)
     private String campoExtra3;
 
+  @Column(name = "campo_extra_4", length = 60)
+    private String campoExtra4;
+
+    @Column(name = "campo_extra_5", length = 60)
+    private String campoExtra5;
 
     @Column(name = "criado_em", nullable = false, updatable = false)
     private LocalDateTime criadoEm = LocalDateTime.now();
