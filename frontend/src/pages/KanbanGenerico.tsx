@@ -683,28 +683,28 @@ const valorCampo = (card: Card, chave: 'valorExtra1' | 'valorExtra2' | 'valorExt
                             {card.prioridade === 'ALTO' ? '🔴' : card.prioridade === 'MEDIO' ? '🟡' : '🟢'}
                           </span>
                           <span style={{
-                                color: 'white',
-                                fontWeight: 700,
-                                fontSize: 'clamp(13px, 1vw, 15px)',
-                                lineHeight: 1.35,
-                                overflowWrap: 'anywhere',
-                              }}>
+                            color: 'white',
+                            fontWeight: 700,
+                            fontSize: '13px',
+                            lineHeight: 1.35,
+                            overflowWrap: 'anywhere',
+                          }}>
                             {card.titulo}
                           </span>
                         </div>
                         {card.descricao && (
                           <div style={{
-                              fontSize: 'clamp(12px, 0.9vw, 14px)',
-                              color: 'rgba(255,255,255,0.72)',
-                              marginBottom: '7px',
-                              lineHeight: 1.55,
-                              overflowWrap: 'anywhere',
-                              display: '-webkit-box',
-                              WebkitLineClamp: 3,
-                              WebkitBoxOrient: 'vertical',
-                              overflow: 'hidden',
-                            }}>
-                              {card.descricao}
+                            fontSize: '12px',
+                            color: 'rgba(255,255,255,0.68)',
+                            marginBottom: '6px',
+                            lineHeight: 1.45,
+                            overflowWrap: 'anywhere',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                          }}>
+                            {card.descricao}
                           </div>
                         )}
                         {campos.map(campo => {

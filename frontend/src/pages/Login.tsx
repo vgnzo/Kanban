@@ -159,13 +159,17 @@ export default function Login() {
       </div>
 
       <footer style={{
-        marginTop: '24px',
-        color: 'rgba(255,255,255,0.3)',
-        fontSize: '12px',
-        letterSpacing: '0.3px'
-      }}>
-        Desenvolvido por Vinicius Galdino
-      </footer>
+          marginTop: '24px',
+          color: 'rgba(255,255,255,0.3)',
+          fontSize: '12px',
+          lineHeight: 1.6,
+          letterSpacing: '0.3px',
+          textAlign: 'center'
+        }}>
+          © {new Date().getFullYear()} Portal Kanban
+          <br />
+          Desenvolvido por <strong>Vinicius Galdino</strong>
+        </footer>
     </div>
   );
 }
