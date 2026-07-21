@@ -682,22 +682,29 @@ const valorCampo = (card: Card, chave: 'valorExtra1' | 'valorExtra2' | 'valorExt
                           <span style={{ fontSize: '11px' }}>
                             {card.prioridade === 'ALTO' ? '🔴' : card.prioridade === 'MEDIO' ? '🟡' : '🟢'}
                           </span>
-                          <span style={{ color: 'white', fontWeight: 700, fontSize: '13px' }}>
+                          <span style={{
+                                color: 'white',
+                                fontWeight: 700,
+                                fontSize: 'clamp(13px, 1vw, 15px)',
+                                lineHeight: 1.35,
+                                overflowWrap: 'anywhere',
+                              }}>
                             {card.titulo}
                           </span>
                         </div>
                         {card.descricao && (
                           <div style={{
-                            fontSize: '11px',
-                            color: 'rgba(255,255,255,0.55)',
-                            marginBottom: '6px',
-                            lineHeight: 1.4,
-                            display: '-webkit-box',
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: 'vertical',
-                            overflow: 'hidden'
-                          }}>
-                            {card.descricao}
+                              fontSize: 'clamp(12px, 0.9vw, 14px)',
+                              color: 'rgba(255,255,255,0.72)',
+                              marginBottom: '7px',
+                              lineHeight: 1.55,
+                              overflowWrap: 'anywhere',
+                              display: '-webkit-box',
+                              WebkitLineClamp: 3,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden',
+                            }}>
+                              {card.descricao}
                           </div>
                         )}
                         {campos.map(campo => {
@@ -821,12 +828,18 @@ const valorCampo = (card: Card, chave: 'valorExtra1' | 'valorExtra2' | 'valorExt
       </DndContext>
 
       <footer style={{
-        textAlign: 'center', padding: '6px 0',
-        color: 'rgba(255,255,255,0.25)', fontSize: '11px',
-        letterSpacing: '0.3px', flexShrink: 0
-      }}>
-        Desenvolvido por Vinicius Galdino
-      </footer>
+            textAlign: 'center',
+            padding: '10px 0',
+            color: 'rgba(255,255,255,0.38)',
+            fontSize: '11px',
+            lineHeight: 1.6,
+            letterSpacing: '0.3px',
+            flexShrink: 0
+          }}>
+            © {new Date().getFullYear()} Portal Kanban
+            <br />
+            Desenvolvido por <strong>Vinicius Galdino</strong>
+          </footer>
 
       {cardSelecionado && (
         <div onClick={fecharCard} style={{
