@@ -943,7 +943,17 @@ const valorCampo = (card: Card, chave: 'valorExtra1' | 'valorExtra2' | 'valorExt
                       <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
                         {item.label}
                       </div>
-                      <div style={{ color: 'white', fontSize: '13px' }}>{item.value}</div>
+                      <div
+                        style={{
+                          color: item.label === 'Descrição' ? '#f5f7ff' : 'white',
+                          fontSize: item.label === 'Descrição' ? '15px' : '13px',
+                          lineHeight: item.label === 'Descrição' ? 1.7 : 1.4,
+                          whiteSpace: item.label === 'Descrição' ? 'pre-wrap' : 'normal',
+                          fontFamily: item.label === 'Descrição' ? 'Arial, sans-serif' : 'inherit',
+                        }}
+                      >
+                        {item.value}
+                      </div>
                     </div>
                   ))}
                 </div>
