@@ -9,16 +9,29 @@ export default function Cadastro() {
   const [senha, setSenha] = useState('');
   const [erro, setErro] = useState('');
   const [loading, setLoading] = useState(false);
-
+  const [cnpj, setCnpj] = useState('');
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleCadastro = async (e: React.FormEvent) => {
     e.preventDefault();
     setErro('');
+
+    const cnpjNumeros = cnpj.replace(/\D/g, '');
+
+    if (cnpjNumeros.length !== 14) {
+      setErro('Informe um CNPJ válido com 14 números.');
+      return;
+    }
+
     setLoading(true);
     try {
-      const response = await api.post('/api/auth/registrar', { nome, email, senha });
+      const response = await api.post('/api/auth/registrar', {
+        nome,
+        email,
+        senha,
+        cnpj: cnpjNumeros,
+      });
       const { token, nome: nomeResp, perfil } = response.data;
       login(token, { nome: nomeResp, email, perfil });
       navigate('/kanban');
@@ -35,21 +48,30 @@ export default function Cadastro() {
 
   return (
     <div style={{
-      minHeight: '100vh',
+      width: '100vw',
+      height: '100vh',
       background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
       display: 'flex',
+      flexDirection: 'column',
       alignItems: 'center',
-      justifyContent: 'center',
+      justifyContent: 'flex-start',
+      overflowY: 'auto', // Força a barra de rolagem vertical
+      padding: '40px 16px 80px 16px', // Espaço extra embaixo para garantir que o botão nunca fique cortado
+      boxSizing: 'border-box',
       fontFamily: "'Segoe UI', sans-serif"
     }}>
       <div style={{
         width: '420px',
+        maxWidth: '100%',
         background: 'rgba(255,255,255,0.05)',
         backdropFilter: 'blur(20px)',
         borderRadius: '16px',
         border: '1px solid rgba(255,255,255,0.1)',
         padding: '48px',
-        boxShadow: '0 25px 50px rgba(0,0,0,0.4)'
+        boxShadow: '0 25px 50px rgba(0,0,0,0.4)',
+        marginTop: '20px',
+        marginBottom: '20px',
+        boxSizing: 'border-box'
       }}>
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <div style={{
@@ -104,6 +126,38 @@ export default function Cadastro() {
                 border: '1px solid rgba(255,255,255,0.15)',
                 borderRadius: '8px', color: 'white',
                 fontSize: '14px', outline: 'none', boxSizing: 'border-box'
+              }}
+            />
+          </div>
+
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{
+              display: 'block',
+              color: 'rgba(255,255,255,0.7)',
+              fontSize: '13px',
+              marginBottom: '8px',
+              fontWeight: 500
+            }}>
+              CNPJ
+            </label>
+
+            <input
+              type="text"
+              value={cnpj}
+              onChange={(e) => setCnpj(e.target.value.replace(/\D/g, '').slice(0, 14))}
+              placeholder="Somente números"
+              maxLength={14}
+              required
+              style={{
+                width: '100%',
+                padding: '12px 16px',
+                background: 'rgba(255,255,255,0.08)',
+                border: '1px solid rgba(255,255,255,0.15)',
+                borderRadius: '8px',
+                color: 'white',
+                fontSize: '14px',
+                outline: 'none',
+                boxSizing: 'border-box'
               }}
             />
           </div>

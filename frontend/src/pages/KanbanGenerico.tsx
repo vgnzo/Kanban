@@ -631,9 +631,21 @@ const valorCampo = (card: Card, chave: 'valorExtra1' | 'valorExtra2' | 'valorExt
                       }}
                     />
                   ) : (
-                    <span style={{ color: 'white', fontSize: '12px', fontWeight: 600, flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {coluna.nome}
-                    </span>
+                  <span style={{
+                          color: 'white',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          flex: 1,
+                          minWidth: 0,
+                          lineHeight: 1.3,
+                          overflowWrap: 'anywhere',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                        }}>
+                          {coluna.nome}
+                        </span>
                   )}
                   {podeEditar && editandoColuna !== coluna.id && (
                     <button
