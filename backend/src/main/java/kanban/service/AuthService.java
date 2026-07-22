@@ -48,9 +48,19 @@ public class AuthService {
             throw new RuntimeException("Email já cadastrado");
         }
 
+        // valida o CNPJ antes de salvar
+        if (request.cnpj() == null || request.cnpj().isBlank()) {
+            throw new RuntimeException("CNPJ é obrigatório");
+        }
+        String cnpj = request.cnpj().replaceAll("\\D", "");
+        if (cnpj.length() != 14) {
+            throw new RuntimeException("CNPJ inválido");
+        }
+
         Usuario usuario = new Usuario();
         usuario.setNome(request.nome());
         usuario.setEmail(request.email());
+        usuario.setCnpj(cnpj);
         usuario.setSenhaHash(passwordEncoder.encode(request.senha()));
         usuario.setPerfil(Usuario.Perfil.USER);
 
@@ -58,7 +68,13 @@ public class AuthService {
 
         String token = jwtUtil.gerarToken(salvo.getEmail(), salvo.getPerfil().name());
 
-       return new LoginResponse(token, usuario.getNome(), usuario.getEmail(), usuario.getPerfil().name(), usuario.getAvatar());
+        return new LoginResponse(
+                token,
+                salvo.getNome(),
+                salvo.getEmail(),
+                salvo.getPerfil().name(),
+                salvo.getAvatar()
+        );
     }
 
     public void trocarSenha(String emailUsuario, String senhaAtual, String senhaNova){

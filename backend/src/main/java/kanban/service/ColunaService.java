@@ -13,16 +13,19 @@ import java.util.UUID;
 @Service
 public class ColunaService {
 
-   private final ColunaRepository colunaRepository;
+    private final ColunaRepository colunaRepository;
     private final BoardRepository boardRepository;
     private final CardRepository cardRepository;
+    private final AcessoService acessoService;
 
     public ColunaService(ColunaRepository colunaRepository,
                          BoardRepository boardRepository,
-                         CardRepository cardRepository) {
+                         CardRepository cardRepository,
+                         AcessoService acessoService) {
         this.colunaRepository = colunaRepository;
         this.boardRepository = boardRepository;
         this.cardRepository = cardRepository;
+        this.acessoService = acessoService;
     }
 
     public List<Coluna> listarColunas() {
@@ -31,6 +34,13 @@ public class ColunaService {
 
     public List<Coluna> listarPorBoard(UUID boardId) {
         return colunaRepository.findByBoardIdOrderByOrdemAsc(boardId);
+    }
+
+    public List<Coluna> listarPorBoard(UUID boardId, String emailUsuario) {
+        if (emailUsuario != null && !acessoService.podeVer(emailUsuario, boardId)) {
+            throw new RuntimeException("Acesso negado a este quadro");
+        }
+        return listarPorBoard(boardId);
     }
 
     public Coluna adicionarColuna(UUID boardId, String nome, String cor) {
@@ -60,6 +70,13 @@ public class ColunaService {
         return colunaRepository.save(coluna);
     }
 
+    public Coluna adicionarColuna(UUID boardId, String nome, String cor, String emailUsuario) {
+        if (emailUsuario != null && !acessoService.podeEditar(emailUsuario, boardId)) {
+            throw new RuntimeException("Sem permissão para alterar este quadro");
+        }
+        return adicionarColuna(boardId, nome, cor);
+    }
+
     public Coluna renomearColuna(UUID colunaId, String novoNome) {
         Coluna coluna = colunaRepository.findById(colunaId)
                 .orElseThrow(() -> new RuntimeException("Coluna não encontrada"));
@@ -70,6 +87,13 @@ public class ColunaService {
 
         coluna.setNome(novoNome);
         return colunaRepository.save(coluna);
+    }
+
+    public Coluna renomearColuna(UUID colunaId, String novoNome, String emailUsuario) {
+        if (emailUsuario != null && !acessoService.podeEditarPelaColuna(emailUsuario, colunaId)) {
+            throw new RuntimeException("Sem permissão para alterar esta coluna");
+        }
+        return renomearColuna(colunaId, novoNome);
     }
 
     public void removerColuna(UUID colunaId) {
@@ -86,5 +110,12 @@ public class ColunaService {
         }
 
         colunaRepository.delete(coluna);
+    }
+
+    public void removerColuna(UUID colunaId, String emailUsuario) {
+        if (emailUsuario != null && !acessoService.podeEditarPelaColuna(emailUsuario, colunaId)) {
+            throw new RuntimeException("Sem permissão para remover esta coluna");
+        }
+        removerColuna(colunaId);
     }
 }

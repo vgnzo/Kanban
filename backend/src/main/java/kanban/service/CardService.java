@@ -32,17 +32,20 @@ public class CardService {
     private final EquipamentoRepository equipamentoRepository;
     private final UsuarioRepository usuarioRepository;
     private final HistoricoCardRepository historicoCardRepository;
+    private final AcessoService acessoService;
 
     public CardService(CardRepository cardRepository,
                        ColunaRepository colunaRepository,
                        EquipamentoRepository equipamentoRepository,
                        UsuarioRepository usuarioRepository,
-                       HistoricoCardRepository historicoCardRepository) {
+                       HistoricoCardRepository historicoCardRepository,
+                       AcessoService acessoService) {
         this.cardRepository = cardRepository;
         this.colunaRepository = colunaRepository;
         this.equipamentoRepository = equipamentoRepository;
         this.usuarioRepository = usuarioRepository;
         this.historicoCardRepository = historicoCardRepository;
+        this.acessoService = acessoService;
     }
 
     public List<CardResponse> listarTodos() {
@@ -59,11 +62,15 @@ public class CardService {
 
     @Transactional
     public CardResponse criar(CardRequest request, String emailUsuario) {
-        Equipamento equipamento = equipamentoRepository.findById(request.equipamentoId())
-                .orElseThrow(() -> new RuntimeException("Equipamento não encontrado"));
-
         Coluna coluna = colunaRepository.findById(request.colunaId())
                 .orElseThrow(() -> new RuntimeException("Coluna não encontrada"));
+
+        if (emailUsuario != null && coluna.getBoard() != null && !acessoService.podeEditar(emailUsuario, coluna.getBoard().getId())) {
+            throw new RuntimeException("Sem permissão para criar cards neste quadro");
+        }
+
+        Equipamento equipamento = equipamentoRepository.findById(request.equipamentoId())
+                .orElseThrow(() -> new RuntimeException("Equipamento não encontrado"));
 
         Card card = new Card();
         card.setEquipamento(equipamento);
@@ -93,6 +100,22 @@ public class CardService {
     public CardResponse moverCard(UUID cardId, UUID novaColunaId, String emailUsuario) {
         Card card = cardRepository.findById(cardId)
                 .orElseThrow(() -> new RuntimeException("Card não encontrado"));
+
+        if (emailUsuario != null && card.getColuna() != null && card.getColuna().getBoard() != null) {
+            if (!acessoService.podeEditar(emailUsuario, card.getColuna().getBoard().getId())) {
+                throw new RuntimeException("Acesso negado: sem permissão para mover card neste quadro");
+            }
+        } else {
+            Usuario usuario = usuarioRepository.findByEmail(emailUsuario)
+                    .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+            String cnpjUsuario = usuario.getCnpj();
+            String cnpjBoard = card.getColuna().getBoard().getDono().getCnpj();
+
+            if (!cnpjUsuario.equals(cnpjBoard)) {
+                throw new RuntimeException("Acesso negado: card não pertence à sua empresa");
+            }
+        }
 
         Coluna colunaOrigem = card.getColuna();
         Coluna colunaDestino = colunaRepository.findById(novaColunaId)
@@ -141,7 +164,7 @@ public class CardService {
                 card.getPrevisaoLiberacao(),
                 card.getCriadoEm(),
                 card.getAtualizadoEm(),
-          card.getValorExtra1(),
+                card.getValorExtra1(),
                 card.getValorExtra2(),
                 card.getValorExtra3(),
                 card.getValorExtra4(),
@@ -154,6 +177,10 @@ public class CardService {
     public CardResponse arquivar(UUID cardId, String emailUsuario) {
         Card card = cardRepository.findById(cardId)
                 .orElseThrow(() -> new RuntimeException("Card não encontrado"));
+
+        if (emailUsuario != null && !acessoService.podeEditarPeloCard(emailUsuario, cardId)) {
+            throw new RuntimeException("Sem permissão para arquivar este card");
+        }
 
         card.setArquivadoEm(LocalDateTime.now());
 
@@ -168,6 +195,10 @@ public class CardService {
     public CardResponse desarquivar(UUID cardId, String emailUsuario) {
         Card card = cardRepository.findById(cardId)
                 .orElseThrow(() -> new RuntimeException("Card não encontrado"));
+
+        if (emailUsuario != null && !acessoService.podeEditarPeloCard(emailUsuario, cardId)) {
+            throw new RuntimeException("Sem permissão para desarquivar este card");
+        }
 
         card.setArquivadoEm(null);
 
@@ -188,10 +219,21 @@ public class CardService {
                 .toList();
     }
 
+    public List<CardResponse> listarArquivadosPorBoard(UUID boardId, String emailUsuario) {
+        if (emailUsuario != null && !acessoService.podeVer(emailUsuario, boardId)) {
+            throw new RuntimeException("Acesso negado a este quadro");
+        }
+        return listarArquivadosPorBoard(boardId);
+    }
+
     @Transactional
     public CardResponse editar(UUID cardId, CardUpdateRequest request, String emailUsuario) {
         Card card = cardRepository.findById(cardId)
                 .orElseThrow(() -> new RuntimeException("Card não encontrado"));
+
+        if (emailUsuario != null && !acessoService.podeEditarPeloCard(emailUsuario, cardId)) {
+            throw new RuntimeException("Sem permissão para editar este card");
+        }
 
         // ----- TÍTULO -----
         if (!java.util.Objects.equals(card.getTitulo(), request.titulo())) {
@@ -251,13 +293,23 @@ public class CardService {
                 .toList();
     }
 
+    public List<CardResponse> listarPorBoard(UUID boardId, String emailUsuario) {
+        if (emailUsuario != null && !acessoService.podeVer(emailUsuario, boardId)) {
+            throw new RuntimeException("Acesso negado a este quadro");
+        }
+        return listarPorBoard(boardId);
+    }
+
     @Transactional
     public CardResponse criarGenerico(CardGenericoRequest request, String emailUsuario) {
         Coluna coluna = colunaRepository.findById(request.colunaId())
                 .orElseThrow(() -> new RuntimeException("Coluna não encontrada"));
 
+        if (emailUsuario != null && coluna.getBoard() != null && !acessoService.podeEditar(emailUsuario, coluna.getBoard().getId())) {
+            throw new RuntimeException("Sem permissão para criar cards neste quadro");
+        }
+
         Card card = new Card();
-        // SEM equipamento — esse é o ponto que diferencia do criar normal
         card.setColuna(coluna);
         card.setTitulo(request.titulo());
         card.setDescricao(request.descricao());
@@ -269,7 +321,6 @@ public class CardService {
         card.setValorExtra3(request.valorExtra3());
         card.setValorExtra4(request.valorExtra4());
         card.setValorExtra5(request.valorExtra5());
-
 
         if (request.responsavelId() != null) {
             usuarioRepository.findById(request.responsavelId())
@@ -287,6 +338,10 @@ public class CardService {
     public CardResponse editarGenerico(UUID cardId, CardGenericoUpdateRequest request, String emailUsuario) {
         Card card = cardRepository.findById(cardId)
                 .orElseThrow(() -> new RuntimeException("Card não encontrado"));
+
+        if (emailUsuario != null && !acessoService.podeEditarPeloCard(emailUsuario, cardId)) {
+            throw new RuntimeException("Sem permissão para editar este card");
+        }
 
         // ----- TÍTULO -----
         if (!java.util.Objects.equals(card.getTitulo(), request.titulo())) {
@@ -366,11 +421,13 @@ public class CardService {
 
     @Transactional
     public CardResponse resetarCard(UUID cardId, ResetCardRequest request, String emailUsuario) {
-        // 1. busca o card original (só pra achar o board/coluna)
         Card original = cardRepository.findById(cardId)
                 .orElseThrow(() -> new RuntimeException("Card não encontrado"));
 
-        // 2. descobre o board e pega a primeira coluna
+        if (emailUsuario != null && !acessoService.podeEditarPeloCard(emailUsuario, cardId)) {
+            throw new RuntimeException("Sem permissão para resetar este card");
+        }
+
         UUID boardId = original.getColuna().getBoard().getId();
         List<Coluna> colunas = colunaRepository.findByBoardIdOrderByOrdemAsc(boardId);
         if (colunas.isEmpty()) {
@@ -378,8 +435,6 @@ public class CardService {
         }
         Coluna primeiraColuna = colunas.get(0);
 
-        // 3. cria o card novo. Se o toggle está ligado, usa o valor enviado (editado);
-        //    se está desligado, deixa vazio.
         Card novo = new Card();
         novo.setColuna(primeiraColuna);
         novo.setTitulo(request.copiarTitulo() && request.titulo() != null && !request.titulo().isBlank()
@@ -395,8 +450,6 @@ public class CardService {
             novo.setPrioridade(request.prioridade());
         }
 
-
-        // 4. salva e registra histórico limpo
         Card salvo = cardRepository.save(novo);
         registrarHistorico(salvo, null, primeiraColuna, emailUsuario, "Card criado (cópia)");
 
@@ -408,12 +461,22 @@ public class CardService {
         Card card = cardRepository.findById(cardId)
                 .orElseThrow(() -> new RuntimeException("Card não encontrado"));
 
-        // apaga o histórico do card primeiro (senão a FK impede apagar o card)
         historicoCardRepository.deleteAll(
             historicoCardRepository.findByCardIdOrderByCriadoEmAsc(cardId)
         );
 
-        // apaga o card
         cardRepository.delete(card);
+    }
+
+    @Transactional
+    public void deletarCard(UUID cardId, String emailUsuario) {
+        Card card = cardRepository.findById(cardId)
+                .orElseThrow(() -> new RuntimeException("Card não encontrado"));
+
+        if (emailUsuario != null && !acessoService.podeEditarPeloCard(emailUsuario, cardId)) {
+            throw new RuntimeException("Sem permissão para excluir este card");
+        }
+
+        deletarCard(cardId);
     }
 }

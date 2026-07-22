@@ -36,6 +36,9 @@ public class Usuario {
         ADMIN, USER
     }
 
+    @Column(nullable = false, length = 14)
+private String cnpj;
+
     @Column(name = "avatar")
 private String avatar;
 

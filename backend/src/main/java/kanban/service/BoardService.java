@@ -17,6 +17,7 @@ import kanban.repository.UsuarioRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Objects;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -154,8 +155,13 @@ public BoardResponse atualizarConfiguracao(
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
         return boardRepository.findAll().stream()
-                .map(b -> toResponse(b, usuario))
-                .toList();
+        .filter(board -> board.getDono() != null)
+        .filter(board -> Objects.equals(
+                board.getDono().getCnpj(),
+                usuario.getCnpj()
+        ))
+        .map(board -> toResponse(board, usuario))
+        .toList();
     }
 
     private String vazioParaNull(String valor) {
